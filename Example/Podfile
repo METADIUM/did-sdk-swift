@@ -1,0 +1,13 @@
+use_frameworks!
+
+platform :ios, '9.0'
+
+target 'DID-SDK-Swift_Example' do
+  pod 'DID-SDK-Swift', :path => '../'
+
+  target 'DID-SDK-Swift_Tests' do
+    inherit! :search_paths
+
+    pod 'FBSnapshotTestCase' , '~> 2.1.4'
+  end
+end
