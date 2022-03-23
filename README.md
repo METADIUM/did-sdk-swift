@@ -62,7 +62,7 @@ end
 
 ## 사용방법
 * [네트워크 설정](#setup-network)
-* [DID 기능]#did-operation)
+* [DID 기능](#did-operation)
     * [DID 생성](#create-did)
     * [DID 삭제](#delete-did)
     * [DID document 확인](#get-did-document)
