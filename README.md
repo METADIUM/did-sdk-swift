@@ -61,20 +61,20 @@ end
 
 
 ## 사용방법
-    * [네트워크 설정](#setup-network)
-    * DID 기능 (#did-operation)
-        * [DID 생성] (#create-did)
-        * [DID 삭제] (#delete-did)
-        * [DID document 확인] (#get-did-document)
-        * [DID 확인](#check-did)
-        * [지갑 저장] (#save-wallet)
-        * [지갑 불러오기] (#load-wallet)
-    * [Verifiable Credential] (#verifiable-credential)
-        * [Credential 발급](#issue-credential)
-        * [Presentation 발급](#issue-presentation)
-        * [Credential 또는 Presentation 검정](#verify-credential-or-presentation)
-        * [Presentations에서 Credential 목록 확인](#get-verifiable-credentials-from-presentation)
-        * [Credential에서 Claim 목록 확인](#get-claims-from-credential)
+* [네트워크 설정](#setup-network)
+* DID 기능 (#did-operation)
+    * [DID 생성] (#create-did)
+    * [DID 삭제] (#delete-did)
+    * [DID document 확인] (#get-did-document)
+    * [DID 확인](#check-did)
+    * [지갑 저장] (#save-wallet)
+    * [지갑 불러오기] (#load-wallet)
+* [Verifiable Credential] (#verifiable-credential)
+    * [Credential 발급](#issue-credential)
+    * [Presentation 발급](#issue-presentation)
+    * [Credential 또는 Presentation 검정](#verify-credential-or-presentation)
+    * [Presentations에서 Credential 목록 확인](#get-verifiable-credentials-from-presentation)
+    * [Credential에서 Claim 목록 확인](#get-claims-from-credential)
         
 
 ### Setup Network
