@@ -3,23 +3,23 @@
 DID 생성 및 키 관리 기능과 [Verifiable Credential](https://www.w3.org/TR/vc-data-model/) 의 서명과 검증에 대한 기능을 iOS에 제공합니다. 
 
 ## 용어정리
-    + DID (탈중앙화 신원증명 : Decentralized Identity)
-        + 개인의 데이터를 중앙화된 기관을 거치지 않으면서도 검증이 가능하게 하는 개념.
-        + [W3C DID Spec](https://www.w3.org/TR/did-core/)
-    + Claim
-        + 전체데이터의 각 단위 데이터 입니다.
-        + 예를 들어 디지털 신원 정보에서 이름, 생년월일, 성별 등과 각각의 값을 페어로 claim 이라 불림.
-        + [W3C VC Claims](https://www.w3.org/TR/vc-data-model/#claims)
-        
-    + Verifiable Credential
-        + 발급자, 유효기한, 검증에 사용되는 발급자의 공개키 등과 claim 의 집합과 서명을 포함하는 검증 가능한 Credential 입니다.
-        + 위변조가 불가능하며 예로 휴대폰본인인증, 전자신분증 등 신원인증이 있습니다.
-        + 발급자가 사용자의 정보를 인증하여 발급하고 사용자에게 전달됩니다.
-        + [W3C VC Credential](https://www.w3.org/TR/vc-data-model/#credentials)
-    + Verifiable Presentation
-        + 하나 이상의 Verifiable Credential 과 소유자의 공개키와 서명을 포함하는 검증 가능한 Presentation 입니다.
-        + 소유자가 발급자에게서 발급 받은 credential 을 검증자에게 제출 시 사용됩니다.
-        + [W3C VC Presentation](https://www.w3.org/TR/vc-data-model/#presentations)
++ DID (탈중앙화 신원증명 : Decentralized Identity)
+    + 개인의 데이터를 중앙화된 기관을 거치지 않으면서도 검증이 가능하게 하는 개념.
+    + [W3C DID Spec](https://www.w3.org/TR/did-core/)
++ Claim
+    + 전체데이터의 각 단위 데이터 입니다.
+    + 예를 들어 디지털 신원 정보에서 이름, 생년월일, 성별 등과 각각의 값을 페어로 claim 이라 불림.
+    + [W3C VC Claims](https://www.w3.org/TR/vc-data-model/#claims)
+    
++ Verifiable Credential
+    + 발급자, 유효기한, 검증에 사용되는 발급자의 공개키 등과 claim 의 집합과 서명을 포함하는 검증 가능한 Credential 입니다.
+    + 위변조가 불가능하며 예로 휴대폰본인인증, 전자신분증 등 신원인증이 있습니다.
+    + 발급자가 사용자의 정보를 인증하여 발급하고 사용자에게 전달됩니다.
+    + [W3C VC Credential](https://www.w3.org/TR/vc-data-model/#credentials)
++ Verifiable Presentation
+    + 하나 이상의 Verifiable Credential 과 소유자의 공개키와 서명을 포함하는 검증 가능한 Presentation 입니다.
+    + 소유자가 발급자에게서 발급 받은 credential 을 검증자에게 제출 시 사용됩니다.
+    + [W3C VC Presentation](https://www.w3.org/TR/vc-data-model/#presentations)
         
         
         
@@ -63,13 +63,13 @@ end
 ## 사용방법
 * [네트워크 설정](#setup-network)
 * DID 기능 (#did-operation)
-    * [DID 생성] (#create-did)
-    * [DID 삭제] (#delete-did)
-    * [DID document 확인] (#get-did-document)
+    * [DID 생성](#create-did)
+    * [DID 삭제](#delete-did)
+    * [DID document 확인](#get-did-document)
     * [DID 확인](#check-did)
-    * [지갑 저장] (#save-wallet)
-    * [지갑 불러오기] (#load-wallet)
-* [Verifiable Credential] (#verifiable-credential)
+    * [지갑 저장](#save-wallet)
+    * [지갑 불러오기](#load-wallet)
+* [Verifiable Credential](#verifiable-credential)
     * [Credential 발급](#issue-credential)
     * [Presentation 발급](#issue-presentation)
     * [Credential 또는 Presentation 검정](#verify-credential-or-presentation)
