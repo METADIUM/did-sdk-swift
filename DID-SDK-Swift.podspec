@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DID-SDK-Swift'
-  s.version          = '0.1.0'
-  s.summary          = 'A short description of DID-SDK-Swift.'
+  s.version          = '1.0.0'
+  s.summary          = 'DID Create, Delete'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -21,14 +21,14 @@ Pod::Spec.new do |s|
 TODO: Add long description of the pod here.
                        DESC
 
-  s.homepage         = 'https://github.com/jinsik/DID-SDK-Swift'
+  s.homepage         = 'https://github.com/METADIUM/did-sdk-swift.git'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'jinsik' => 'jshan@coinplug.com' }
-  s.source           = { :git => 'https://github.com/jinsik/DID-SDK-Swift.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/METADIUM/did-sdk-swift.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
-  s.ios.deployment_target = '9.0'
+  s.ios.deployment_target = '11.3'
 
   s.source_files = 'DID-SDK-Swift/Classes/**/*'
   
@@ -38,5 +38,7 @@ TODO: Add long description of the pod here.
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
+  s.dependency 'web3iOS', '~> 1.2.1'
+  s.dependency 'JOSESwift'
+  s.dependency 'VerifiableSwift'
 end

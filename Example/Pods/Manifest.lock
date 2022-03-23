@@ -1,0 +1,79 @@
+PODS:
+  - BigInt (3.1.0):
+    - SipHash (~> 1.2)
+  - CryptoSwift (1.4.3)
+  - DID-SDK-Swift (0.1.0):
+    - JOSESwift
+    - VerifiableSwift
+    - web3iOS (~> 1.2.1)
+  - EthereumAddress (1.3.0):
+    - CryptoSwift (~> 1.0)
+  - FBSnapshotTestCase (2.1.4):
+    - FBSnapshotTestCase/SwiftSupport (= 2.1.4)
+  - FBSnapshotTestCase/Core (2.1.4)
+  - FBSnapshotTestCase/SwiftSupport (2.1.4):
+    - FBSnapshotTestCase/Core
+  - JOSESwift (2.4.0)
+  - JWTsSwift (0.1.1):
+    - secp256k1_swift
+  - secp256k1_swift (1.0.3)
+  - SipHash (1.2.2)
+  - SwiftRLP (1.2):
+    - BigInt (~> 3.1)
+  - VerifiableSwift (0.2.1):
+    - JWTsSwift
+  - web3iOS (1.2.1):
+    - BigInt
+    - CryptoSwift
+    - EthereumAddress
+    - secp256k1_swift (~> 1.0.3)
+    - SwiftRLP (~> 1.1)
+
+DEPENDENCIES:
+  - DID-SDK-Swift (from `../`)
+  - FBSnapshotTestCase (~> 2.1.4)
+  - JOSESwift
+  - VerifiableSwift
+  - web3iOS (from `https://github.com/METADIUM/Web3Swift-iOS.git`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - BigInt
+    - CryptoSwift
+    - EthereumAddress
+    - FBSnapshotTestCase
+    - JOSESwift
+    - JWTsSwift
+    - secp256k1_swift
+    - SipHash
+    - SwiftRLP
+    - VerifiableSwift
+
+EXTERNAL SOURCES:
+  DID-SDK-Swift:
+    :path: "../"
+  web3iOS:
+    :git: https://github.com/METADIUM/Web3Swift-iOS.git
+
+CHECKOUT OPTIONS:
+  web3iOS:
+    :commit: d2f7135cbd477ec69c925b79ff7acaceb7db0e84
+    :git: https://github.com/METADIUM/Web3Swift-iOS.git
+
+SPEC CHECKSUMS:
+  BigInt: 76b5dfdfa3e2e478d4ffdf161aeede5502e2742f
+  CryptoSwift: a0799ee936271bd2253a006f1e4523df21845000
+  DID-SDK-Swift: 6df711733f1d7174cb0be7b52449bc3ae3c121d1
+  EthereumAddress: 39fe8e11cf04e4e9902b55ae653dbc4e0aee5f30
+  FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
+  JOSESwift: 7ff178bb9173ff42c6e990929a9f2fa702a34f69
+  JWTsSwift: eea56c3b1c43382a0ebb4f0bbe0947538ce88453
+  secp256k1_swift: 4fc5c4b2d2c6d21ee8ccb868cdc92da12f38bed9
+  SipHash: fad90a4683e420c52ef28063063dbbce248ea6d4
+  SwiftRLP: 98a02b2210128353ca02e4c2f4d83e2a9796db4f
+  VerifiableSwift: 6da280c3f564324c382d0171458a5c1c8dfb0db8
+  web3iOS: 2db9c97ef9013b3e4b723893ba3d3abd575148ee
+
+PODFILE CHECKSUM: 1568d80c43e29f6ab2fb70ecffc66a72fd063a0e
+
+COCOAPODS: 1.11.2

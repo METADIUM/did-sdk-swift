@@ -1,0 +1,6 @@
+framework module Pods_DID_SDK_Swift_Tests {
+  umbrella header "Pods-DID-SDK-Swift_Tests-umbrella.h"
+
+  export *
+  module * { export * }
+}

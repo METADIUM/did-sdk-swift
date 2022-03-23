@@ -1,0 +1,6 @@
+framework module VerifiableSwift {
+  umbrella header "VerifiableSwift-umbrella.h"
+
+  export *
+  module * { export * }
+}

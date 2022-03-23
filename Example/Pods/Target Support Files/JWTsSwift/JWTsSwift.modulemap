@@ -1,0 +1,6 @@
+framework module JWTsSwift {
+  umbrella header "JWTsSwift-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,13 +1,31 @@
-use_frameworks!
 
-platform :ios, '9.0'
+platform :ios, '11.3'
+source 'https://github.com/CocoaPods/Specs.git'
+
+
+def import_pods
+  pod 'web3iOS', :git => 'https://github.com/METADIUM/Web3Swift-iOS.git'
+  pod 'JOSESwift'
+  pod 'VerifiableSwift'
+end
+
 
 target 'DID-SDK-Swift_Example' do
+  
+  use_frameworks!
+  
+  import_pods
+  
   pod 'DID-SDK-Swift', :path => '../'
 
   target 'DID-SDK-Swift_Tests' do
+    
+    
     inherit! :search_paths
 
     pod 'FBSnapshotTestCase' , '~> 2.1.4'
+    
+    import_pods
+    
   end
 end

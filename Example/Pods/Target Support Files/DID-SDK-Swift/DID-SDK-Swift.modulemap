@@ -1,0 +1,6 @@
+framework module DID_SDK_Swift {
+  umbrella header "DID-SDK-Swift-umbrella.h"
+
+  export *
+  module * { export * }
+}
