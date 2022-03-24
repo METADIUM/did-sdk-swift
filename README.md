@@ -125,7 +125,7 @@ DID를 삭제합니다.
 #### Get DID Document
 
 ```Swift
-    let didDocument = try? MetaWallet.getDiDDocument(resolverUrl: delegator.resolverUrl)
+    let didDocument = try? MetaWallet.getDiDDocument(did: did, resolverUrl: delegator.resolverUrl)
 ```
 
 

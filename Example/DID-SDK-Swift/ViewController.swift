@@ -51,43 +51,12 @@ class ViewController: UIViewController {
         }
         
         let did = wallet.getDid()
-        let didDocument = try? MetaWallet.getDiDDocument(resolverUrl: delegator.resolverUrl)
+        let didDocument = try? MetaWallet.getDiDDocument(did: did, resolverUrl: delegator.resolverUrl)
         
         
         //load wallet
         let wallet1 = MetaWallet(delegator: delegator, jsonStr: wallet.toJson())
         print(wallet1.getDid())
-        
-        let issuanceDate = Date()
-        let expirationDate = Date()
-        
-        let vc = try? wallet.issueCredential(types: ["PersonalIdCredential", "NameCredential"],      // 표현할 credential 의 이름을 나열. PersonalIdCredential의 NameCredential
-                                                id: "http://aa.metadium.com/credential/name/343",
-                                                nonce: nil,
-                                                issuanceDate: issuanceDate,
-                                                expirationDate: expirationDate,
-                                                ownerDid: did,
-                                                subjects: ["name": "YoungBaeJeon"])!
-        
-        
-        let nameVC = try? vc!.serialize()
-        print(nameVC!)
-        
-        
-        /*
-        let vp = try? wallet.issuePresentation(types: ["TestPresentation"],
-                                               id: "http://aa.metadium.com/credential/name/343",
-                                               nonce: nil,
-                                               issuanceDate: issuanceDate,
-                                               expirationDate: expirationDate,
-                                               vcList: foundVcList)
-        
-        let serializedVP = try? vp!.serialize()
-        */
-        
-        
-//        let credential = try? VerifiableCredential(jws: JWSObject.init(string: "serializedVc"))
-//        let subjects = credential!.getCredentialSubject()
     }
     
     
