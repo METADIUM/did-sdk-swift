@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DID-SDK-Swift'
-  s.version          = '1.0.2'
+  s.version          = '1.0.3'
   s.swift_version    = '4.2'
   s.summary          = 'DID Create, Delete'
 
