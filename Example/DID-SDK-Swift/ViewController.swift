@@ -61,6 +61,7 @@ class ViewController: UIViewController {
     
     
     @IBAction func deleteDidAction() {
+        /*
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",
                                       resolverUrl: "https://testnetresolver.metadium.com/1.0/identifiers/",
@@ -72,6 +73,7 @@ class ViewController: UIViewController {
         let walletJson = ""
         let wallet = MetaWallet(delegator: delegator, jsonStr: walletJson)
         wallet.deleteDID()
+         */
     }
     
     

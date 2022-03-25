@@ -128,9 +128,7 @@ public class MetaWallet: NSObject {
                 return
             }
             
-            self.transationType = .createDid
-            
-            Thread.sleep(forTimeInterval: 1.2)
+            self.transationType = type
             
             self.transactionReceipt(txId: txID!)
         }
@@ -143,7 +141,8 @@ public class MetaWallet: NSObject {
         
         self.delegator.ethereumClient.eth_getTransactionReceipt(txHash: txId) { (error, receipt) in
             if error != nil {
-                self.dispatchGroup.leave()
+                
+                self.transactionReceipt(txId: txId)
                 
                 return
             }
@@ -191,9 +190,7 @@ public class MetaWallet: NSObject {
                 return
             }
             
-            Thread.sleep(forTimeInterval: 0.7)
-            
-            self.transationType = .removePublicKey
+            self.transationType = type
             
             self.transactionReceipt(txId: txID!)
         }
@@ -210,10 +207,8 @@ public class MetaWallet: NSObject {
             if error != nil {
                 return
             }
-            
-            Thread.sleep(forTimeInterval: 0.7)
 
-            self.transationType = .removeAssociatedAddress
+            self.transationType = type
             
             self.transactionReceipt(txId: txID!)
         }
@@ -490,9 +485,7 @@ public class MetaWallet: NSObject {
                     return
                 }
                 
-                Thread.sleep(forTimeInterval: 0.7)
-                
-                self.transationType = .addWalletPublicKey
+                self.transationType = type
                 self.transactionReceipt(txId: txId!)
             }
         }
