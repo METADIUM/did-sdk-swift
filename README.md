@@ -161,7 +161,7 @@ DID가 블록체인에 존재하는지 확인한다.
 DID의 키로 서명([Elliptic Curve Digital Signature Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)을 합니다.
  
 ```Swift
-    let signatureData = issuerWallet.getSignature(data: Data())
+    let signatureData = wallet.getSignature(data: Data())
     
     let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.withHexPrefix
     
