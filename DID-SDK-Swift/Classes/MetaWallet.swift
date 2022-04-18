@@ -600,13 +600,13 @@ public class MetaWallet: NSObject {
         if arr!.count > 0 {
             let did = arr![0]
             
-            let didDocument = try! MetaWallet.getDiDDocument(did: did, resolverUrl: resolverUrl)
+            let didDocument = try? MetaWallet.getDiDDocument(did: did, resolverUrl: resolverUrl)
             
             if didDocument == nil {
                 throw verifyError.noneDidDocument
             }
             
-            let publicKey = didDocument!.publicKey
+            let publicKey = didDocument!!.publicKey
             
             guard let publicKeyHex = (publicKey![0] as NSDictionary)["publicKeyHex"] as? String else {
                 throw verifyError.nonePublicKey
