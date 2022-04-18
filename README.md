@@ -69,6 +69,7 @@ end
     * [DID 확인](#check-did)
     * [지갑 저장](#save-wallet)
     * [지갑 불러오기](#load-wallet)
+    * [서명](#signing)
 * [Verifiable Credential](#verifiable-credential)
     * [Credential 발급](#issue-credential)
     * [Presentation 발급](#issue-presentation)
@@ -154,6 +155,19 @@ DID가 블록체인에 존재하는지 확인한다.
 
     let wallet = MetaWallet(delegator: delegator, jsonStr: walletJson)
     
+```
+
+### Signing
+DID의 키로 서명([Elliptic Curve Digital Signature Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)을 합니다.
+ 
+```Swift
+    let signatureData = wallet.getSignature(data: Data())
+    
+    let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.withHexPrefix
+    
+    let r = signatureData?.r
+    let s = signatureData?.s
+    let v = signatureData?.v
 ```
 
 ### Verifiable Credential
