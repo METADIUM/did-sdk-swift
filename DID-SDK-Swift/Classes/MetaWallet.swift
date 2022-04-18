@@ -23,19 +23,20 @@ public enum MetaTransactionType {
     case removeAssociatedAddress
 }
 
+public enum verifyError: Error {
+    case networkError
+    case noneDidDocument
+    case failedVerify
+    case noneKid
+    case nonePublicKey
+}
+
 public class MetaWallet: NSObject {
     
     public enum WalletError: Error {
         case noneRegistryAddress(String)
     }
-    
-    public enum verifyError: Error {
-        case networkError
-        case noneDidDocument
-        case failedVerify
-        case noneKid
-        case nonePublicKey
-    }
+
     
     var account: EthereumAccount!
     var delegator: MetaDelegator!

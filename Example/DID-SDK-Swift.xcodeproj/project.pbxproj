@@ -597,6 +597,7 @@
 			baseConfigurationReference = 14B0C9FB70CB3A505465DC7C /* Pods-DID-SDK-Swift_Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "DID-SDK-Swift/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MODULE_NAME = ExampleApp;
@@ -612,6 +613,7 @@
 			baseConfigurationReference = 7B0858AAD2E1CC406890FECD /* Pods-DID-SDK-Swift_Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "DID-SDK-Swift/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MODULE_NAME = ExampleApp;
