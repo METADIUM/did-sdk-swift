@@ -31,7 +31,7 @@ class Tests: XCTestCase {
     func test() {
         //메인넷
 //        let delegator = MetaDelegator.init()
-        
+
         //테스트넷
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",
@@ -49,6 +49,18 @@ class Tests: XCTestCase {
         print(userWallet.getDid())
         
         
+        // Signing
+        let signatureData = issuerWallet.getSignature(data: Data())
+        
+        let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.withHexPrefix
+        let r = signatureData?.r
+        let s = signatureData?.s
+        let v = signatureData?.v
+        
+        print(signature)
+        print("\(r), \(s), \(v)")
+        
+        
         // 2. 사용자가 발급자에게 credential 발급 요청
         let vpForIssueCredential = try? userWallet.issuePresentation(types: [],
                                                                      id: nil,
@@ -60,13 +72,23 @@ class Tests: XCTestCase {
         
         
         // 3. 발급자가 DID 검증
-        let verified = try? MetaWallet.verify(jwt: JWSObject(string: vpForIssueCredential!!), resolverUrl: delegator.resolverUrl)
         
-        
-        if !verified! {
-            //검증실패
-            XCTAssert(false, "vpForIssueCredential 검증 실패")
+        do {
+            let verified = try! MetaWallet.verify(jwt: JWSObject(string: vpForIssueCredential!!), resolverUrl: delegator.resolverUrl)
+            
+            if !verified {
+                //검증실패
+                XCTAssert(false, "vpForIssueCredential 검증 실패")
+            }
+            
+        } catch verifyError.noneDidDocument {
+            
+        } catch verifyError.nonePublicKey {
+            
+        } catch verifyError.failedVerify {
+            
         }
+        
         
         let vp = try? VerifiablePresentation(jws: JWSObject(string: vpForIssueCredential!!))
         

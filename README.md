@@ -298,12 +298,22 @@ extension Array where Element: Equatable {
 
     let expireDate = jwt!.expirationTime
 
-    let isVerify = try! MetaWallet.verify(jwt: jws!, resolverUrl: delegator.resolverUrl)
 
-    if isVerify == false {
-        //검증실패
+    do {
+        let verified = try! MetaWallet.verify(jwt: JWSObject(string: vpForIssueCredential!!), resolverUrl: delegator.resolverUrl)
+        
+        if !verified {
+            //검증실패
+            XCTAssert(false, "vpForIssueCredential 검증 실패")
+        }
+        
+    } catch verifyError.noneDidDocument {
+        //todo
+    } catch verifyError.nonePublicKey {
+        //todo
     }
-    else if (expireDate != nil && expireDate! > Date()) {
+    
+    if (expireDate != nil && expireDate! < Date()) {
         // 유효기간 초과
     }
 ```        
