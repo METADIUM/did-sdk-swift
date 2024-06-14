@@ -18,7 +18,7 @@ echo "mkdir -p ${CONFIGURATION_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
 mkdir -p "${CONFIGURATION_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
 
 COCOAPODS_PARALLEL_CODE_SIGN="${COCOAPODS_PARALLEL_CODE_SIGN:-false}"
-SWIFT_STDLIB_PATH="${DT_TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}"
+SWIFT_STDLIB_PATH="${TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}"
 BCSYMBOLMAP_DIR="BCSymbolMaps"
 
 
@@ -41,7 +41,7 @@ install_framework()
 
   if [ -L "${source}" ]; then
     echo "Symlinked..."
-    source="$(readlink "${source}")"
+    source="$(readlink -f "${source}")"
   fi
 
   if [ -d "${source}/${BCSYMBOLMAP_DIR}" ]; then
@@ -179,27 +179,27 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/BigInt/BigInt.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/CryptoSwift/CryptoSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/DID-SDK-Swift/DID_SDK_Swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/EthereumAddress/EthereumAddress.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/JOSESwift/JOSESwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/JWTsSwift/JWTsSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/SipHash/SipHash.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/SwiftRLP/SwiftRLP.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/Starscream/Starscream.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/VerifiableSwift/VerifiableSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1_swift/secp256k1_swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/web3iOS/web3Swift.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/Web3Core/Web3Core.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.c/secp256k1.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.swift/secp256k1.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/web3swift/web3swift.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/BigInt/BigInt.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/CryptoSwift/CryptoSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/DID-SDK-Swift/DID_SDK_Swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/EthereumAddress/EthereumAddress.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/JOSESwift/JOSESwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/JWTsSwift/JWTsSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/SipHash/SipHash.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/SwiftRLP/SwiftRLP.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/Starscream/Starscream.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/VerifiableSwift/VerifiableSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1_swift/secp256k1_swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/web3iOS/web3Swift.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/Web3Core/Web3Core.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.c/secp256k1.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.swift/secp256k1.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/web3swift/web3swift.framework"
 fi
 if [ "${COCOAPODS_PARALLEL_CODE_SIGN}" == "true" ]; then
   wait

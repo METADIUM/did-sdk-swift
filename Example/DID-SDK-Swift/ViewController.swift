@@ -16,6 +16,8 @@ class ViewController: UIViewController {
     @IBOutlet weak var didLabel: UILabel!
     @IBOutlet weak var privateKeyLabel: UILabel!
 
+    
+    var wallet: MetaWallet!
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -27,40 +29,62 @@ class ViewController: UIViewController {
     }
     
 
-    
+
     @IBAction func createDidAction() {
         
+        //테스트넷
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",
                                       resolverUrl: "https://testnetresolver.metadium.com/1.0/identifiers/",
                                       didPrefix: "did:meta:testnet:",
                                       api_key: "")
         
-        let wallet = MetaWallet(delegator: delegator)
-        wallet.createDID()
         
+        /*
+        //메인넷
+        let delegator = MetaDelegator(delegatorUrl: "https://delegator.metadium.com",
+                                      nodeUrl: "https://api.metadium.com/prod",
+                                      resolverUrl: "https://resolver.metadium.com/1.0/identifiers/",
+                                      didPrefix: "did:meta:",
+                                      api_key: "")
+         */
         
-        DispatchQueue.main.async {
-            let key = wallet.getKey()
-            
-            print("did: \(wallet.getDid())")
-            print("privateKey:\(key?.privateKey)")
-            
-            self.didLabel.text = wallet.getDid()
-            self.privateKeyLabel.text = key?.privateKey
+        self.wallet = MetaWallet(delegator: delegator)
+        self.wallet.createDID {
+            DispatchQueue.main.asyncAfter(deadline: .now()) {
+                guard let key = self.wallet.getKey() else {
+                    return
+                }
+                
+                print("privateKey:\(key.privateKey ?? "")")
+                print("did: \(self.wallet.getDid())")
+                
+                self.didLabel.text = self.wallet.getDid()
+                self.privateKeyLabel.text = key.privateKey
+                
+                let did = self.wallet.getDid()
+                if let didDocument = try? MetaWallet.getDiDDocument(did: did, resolverUrl: delegator.resolverUrl) {
+                    
+                }
+                
+                //load wallet
+                let wallet1 = MetaWallet(delegator: delegator, jsonStr: self.wallet.toJson()!)
+                print(wallet1.getDid())
+            }
         }
-        
-        let did = wallet.getDid()
-        let didDocument = try? MetaWallet.getDiDDocument(did: did, resolverUrl: delegator.resolverUrl)
-        
-        
-        //load wallet
-        let wallet1 = MetaWallet(delegator: delegator, jsonStr: wallet.toJson())
-        print(wallet1.getDid())
     }
     
     
     @IBAction func deleteDidAction() {
+        
+        self.wallet.deleteDID { successed in
+            if successed {
+                DispatchQueue.main.async {
+                    self.didLabel.text = ""
+                    self.privateKeyLabel.text = ""
+                }
+            }
+        }
         /*
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",

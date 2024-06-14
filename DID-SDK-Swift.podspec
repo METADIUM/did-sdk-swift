@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DID-SDK-Swift'
-  s.version          = '1.0.6'
+  s.version          = '1.0.7'
   s.swift_version    = '4.2'
   s.summary          = 'DID Create, Delete'
 
@@ -29,16 +29,16 @@ TODO: Add long description of the pod here.
   s.source           = { :git => 'https://github.com/METADIUM/did-sdk-swift.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
-  s.ios.deployment_target = '11.3'
-
-  s.source_files = 'DID-SDK-Swift/Classes/**/*'
+  s.ios.deployment_target = '15.0'
+  
+  s.source_files = 'Sources/DID-SDK-Swift/Classes/**/*'
   
   # s.resource_bundles = {
   #   'DID-SDK-Swift' => ['DID-SDK-Swift/Assets/*.png']
   # }
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'web3iOS', '~> 1.1.9'
+  s.dependency 'web3swift'
   s.dependency 'JOSESwift'
   s.dependency 'VerifiableSwift'
 end

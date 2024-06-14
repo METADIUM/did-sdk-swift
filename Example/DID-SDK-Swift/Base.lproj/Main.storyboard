@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="19162" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="vXZ-lx-hvc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="32700.99.1234" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="vXZ-lx-hvc">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="19144"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22685"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -19,30 +19,19 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hbi-IG-c0X">
-                                <rect key="frame" x="16" y="527" width="343" height="46"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="46" id="vYR-M3-d4J"/>
-                                </constraints>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" title="DID 생성"/>
-                                <connections>
-                                    <action selector="createDidAction" destination="vXZ-lx-hvc" eventType="touchUpInside" id="Bmx-DP-kIr"/>
-                                </connections>
-                            </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UlP-h9-7q0">
                                 <rect key="frame" x="16" y="597" width="343" height="46"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="46" id="v0r-7w-4hw"/>
                                 </constraints>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" title="DID 삭제"/>
+                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" title="Remove DID"/>
                                 <connections>
                                     <action selector="deleteDidAction" destination="vXZ-lx-hvc" eventType="touchUpInside" id="vpH-X2-Jdb"/>
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DID" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="50M-mZ-GSi">
-                                <rect key="frame" x="24" y="44" width="327" height="15"/>
+                                <rect key="frame" x="24" y="64" width="327" height="15"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="15" id="zks-xu-CCl"/>
                                 </constraints>
@@ -51,7 +40,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mKZ-Cy-tvq">
-                                <rect key="frame" x="24" y="67" width="327" height="32"/>
+                                <rect key="frame" x="24" y="87" width="327" height="32"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="32" id="f4O-rV-pVO"/>
                                 </constraints>
@@ -60,7 +49,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="privateKey" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="LT6-dZ-wzF">
-                                <rect key="frame" x="24" y="115" width="327" height="15"/>
+                                <rect key="frame" x="24" y="135" width="327" height="15"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="15" id="VcF-DP-s13"/>
                                 </constraints>
@@ -69,7 +58,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o4f-iJ-78J">
-                                <rect key="frame" x="24" y="138" width="327" height="32"/>
+                                <rect key="frame" x="24" y="158" width="327" height="32"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="32" id="zZH-5X-6tD"/>
                                 </constraints>
@@ -77,6 +66,17 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wkJ-K5-TER">
+                                <rect key="frame" x="24" y="531" width="327" height="46"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="46" id="xca-eR-rPa"/>
+                                </constraints>
+                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" title="Create DID"/>
+                                <connections>
+                                    <action selector="createDidAction" destination="vXZ-lx-hvc" eventType="touchUpInside" id="eXc-YL-xb8"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -88,16 +88,16 @@
                             <constraint firstItem="50M-mZ-GSi" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="24" id="Tq4-nF-gkt"/>
                             <constraint firstAttribute="trailing" secondItem="LT6-dZ-wzF" secondAttribute="trailing" constant="24" id="U4M-ew-Vy1"/>
                             <constraint firstItem="2fi-mo-0CV" firstAttribute="top" secondItem="UlP-h9-7q0" secondAttribute="bottom" constant="24" id="Uqi-t7-tf8"/>
-                            <constraint firstAttribute="trailing" secondItem="hbi-IG-c0X" secondAttribute="trailing" constant="16" id="bkw-EF-fL1"/>
                             <constraint firstItem="mKZ-Cy-tvq" firstAttribute="top" secondItem="50M-mZ-GSi" secondAttribute="bottom" constant="8" id="e5a-sd-TuN"/>
-                            <constraint firstItem="2fi-mo-0CV" firstAttribute="top" secondItem="hbi-IG-c0X" secondAttribute="bottom" constant="94" id="gnp-dr-oyn"/>
                             <constraint firstAttribute="trailing" secondItem="UlP-h9-7q0" secondAttribute="trailing" constant="16" id="jhF-9R-qa3"/>
                             <constraint firstAttribute="trailing" secondItem="mKZ-Cy-tvq" secondAttribute="trailing" constant="24" id="phh-8s-n6D"/>
+                            <constraint firstItem="wkJ-K5-TER" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="24" id="q4q-1h-gda"/>
                             <constraint firstAttribute="trailing" secondItem="o4f-iJ-78J" secondAttribute="trailing" constant="24" id="t8a-0U-p2B"/>
                             <constraint firstItem="LT6-dZ-wzF" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="24" id="wjr-u4-gks"/>
                             <constraint firstItem="LT6-dZ-wzF" firstAttribute="top" secondItem="mKZ-Cy-tvq" secondAttribute="bottom" constant="16" id="wr6-co-SgI"/>
                             <constraint firstItem="50M-mZ-GSi" firstAttribute="top" secondItem="jyV-Pf-zRb" secondAttribute="bottom" constant="44" id="xNk-Wr-kLT"/>
-                            <constraint firstItem="hbi-IG-c0X" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="16" id="yuv-Kt-zzw"/>
+                            <constraint firstItem="UlP-h9-7q0" firstAttribute="top" secondItem="wkJ-K5-TER" secondAttribute="bottom" constant="20" id="xyX-45-shU"/>
+                            <constraint firstAttribute="trailing" secondItem="wkJ-K5-TER" secondAttribute="trailing" constant="24" id="y9g-bm-SRB"/>
                         </constraints>
                     </view>
                     <connections>

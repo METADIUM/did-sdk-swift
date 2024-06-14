@@ -3,6 +3,7 @@ import DID_SDK_Swift
 import VerifiableSwift
 import JWTsSwift
 
+
 class Tests: XCTestCase {
     
     override func setUp() {
@@ -39,26 +40,30 @@ class Tests: XCTestCase {
                                       didPrefix: "did:meta:testnet:",
                                       api_key: "")
         
+        
         // 1. 발급자, 사용자 DID 생성
         let issuerWallet = MetaWallet(delegator: delegator)
-        issuerWallet.createDID()
-        print(issuerWallet.getDid())
+        issuerWallet.createDID {
+            print(issuerWallet.getDid())
+        }
+        
         
         let userWallet = MetaWallet(delegator: delegator)
-        userWallet.createDID()
-        print(userWallet.getDid())
+        userWallet.createDID {
+            print(userWallet.getDid())
+        }
+        
         
         
         // Signing
         let signatureData = issuerWallet.getSignature(data: Data())
         
-        let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.withHexPrefix
+        let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.addHexPrefix()
         let r = signatureData?.r
         let s = signatureData?.s
         let v = signatureData?.v
         
-        print(signature)
-        print("\(r), \(s), \(v)")
+        print(signature ?? "")
         
         
         // 2. 사용자가 발급자에게 credential 발급 요청

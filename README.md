@@ -21,8 +21,6 @@ DID 생성 및 키 관리 기능과 [Verifiable Credential](https://www.w3.org/T
     + 소유자가 발급자에게서 발급 받은 credential 을 검증자에게 제출 시 사용됩니다.
     + [W3C VC Presentation](https://www.w3.org/TR/vc-data-model/#presentations)
         
-        
-        
 ## DID Workflow
 
 ![Workflow](https://github.com/METADIUM/did-sdk-java/blob/master/images/DIDWorkflow.jpg)
@@ -58,6 +56,18 @@ target 'project' do
     pod 'DID-SDK-Swift', :git => 'https://github.com/METADIUM/did-sdk-swift.git'
 end
 ```
+
+
+### Swift Package (Recommended)
+The [Swift_Package_Manager](https://github.com/METADIUM/did-sdk-swift.git/ "")
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.0.7"))
+]
+```
+
+
 
 
 ## 사용방법
@@ -107,12 +117,15 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 
 ```Swift
     let wallet = MetaWallet(delegator: delegator)
-    wallet.createDID()
-    let did = wallet.getDid()                       // 생성된 DID ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0 
-    let kid = wallet.getKid()                       // 생성된 private key의 id ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0#MetaManagementKey#234f9445cd405a2a454245b94f7bc5e9286912eb
-    
-    let key = wallet.getKey()
-    let priateKey = key?.privateKey                
+    wallet.createDID {
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
+            let did = wallet.getDid()                       // 생성된 DID ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0 
+            let kid = wallet.getKid()                       // 생성된 private key의 id ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0#MetaManagementKey#234f9445cd405a2a454245b94f7bc5e9286912eb
+            
+            let key = wallet.getKey()
+            let priateKey = key?.privateKey
+        }
+    }
     
 ```
 
@@ -120,7 +133,10 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 DID를 삭제합니다.
  
 ```Swift
-    wallet.deleteDID()
+    wallet.deleteDID { finished in
+        
+    }
+}
 ```
 
 #### Get DID Document
