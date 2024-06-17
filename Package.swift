@@ -14,9 +14,7 @@ let package = Package(
     ],
     
     dependencies: [
-        .package(url: "https://github.com/web3swift-team/web3swift.git", .upToNextMajor(from: "3.2.1")),
-        .package(url: "https://github.com/METADIUM/VerifiableSwift.git", .upToNextMajor(from: "0.2.2")),
-        .package(url: "https://github.com/airsidemobile/JOSESwift.git", .upToNextMajor(from: "2.3.0"))
+        .package(url: "https://github.com/web3swift-team/web3swift.git", .upToNextMajor(from: "3.0.0"))
     ],
     
     targets: [
@@ -25,9 +23,7 @@ let package = Package(
         .target(
             name: "did-sdk-swift",
             dependencies: [
-                .product(name: "web3swift", package: "web3swift"),
-                .product(name: "VerifiableSwift", package: "VerifiableSwift", moduleAliases: ["secp256k1": "secp256k1_swift"]),
-                .product(name: "JOSESwift", package: "JOSESwift")
+                .product(name: "web3swift", package: "Web3swift")
             ]),
         .testTarget(
             name: "did-sdk-swiftTests",

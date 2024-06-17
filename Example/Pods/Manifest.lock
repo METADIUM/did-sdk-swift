@@ -1,23 +1,10 @@
 PODS:
   - BigInt (5.2.0)
   - CryptoSwift (1.5.1)
-  - DID-SDK-Swift (1.0.7):
-    - JOSESwift
-    - VerifiableSwift
+  - DID-SDK-Swift (1.0.8):
     - web3swift
-  - FBSnapshotTestCase (2.1.4):
-    - FBSnapshotTestCase/SwiftSupport (= 2.1.4)
-  - FBSnapshotTestCase/Core (2.1.4)
-  - FBSnapshotTestCase/SwiftSupport (2.1.4):
-    - FBSnapshotTestCase/Core
-  - JOSESwift (2.4.0)
-  - JWTsSwift (0.1.2):
-    - secp256k1.swift
   - secp256k1.c (0.1.2)
-  - secp256k1.swift (0.1.4)
   - Starscream (4.0.8)
-  - VerifiableSwift (0.2.2):
-    - JWTsSwift
   - Web3Core (3.1.2):
     - BigInt (~> 5.2.0)
     - CryptoSwift (~> 1.5.1)
@@ -28,22 +15,14 @@ PODS:
 
 DEPENDENCIES:
   - DID-SDK-Swift (from `../`)
-  - FBSnapshotTestCase (~> 2.1.4)
-  - JOSESwift
-  - VerifiableSwift
   - web3swift
 
 SPEC REPOS:
   https://github.com/CocoaPods/Specs.git:
     - BigInt
     - CryptoSwift
-    - FBSnapshotTestCase
-    - JOSESwift
-    - JWTsSwift
     - secp256k1.c
-    - secp256k1.swift
     - Starscream
-    - VerifiableSwift
     - Web3Core
     - web3swift
 
@@ -54,17 +33,12 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   BigInt: f668a80089607f521586bbe29513d708491ef2f7
   CryptoSwift: c4f2debceb38bf44c80659afe009f71e23e4a082
-  DID-SDK-Swift: 938303c0d1abb8387daacaa101df4388b2f93687
-  FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
-  JOSESwift: 7ff178bb9173ff42c6e990929a9f2fa702a34f69
-  JWTsSwift: 102d2b20d0b54677ebf69f3faa1572691fb0d1fb
+  DID-SDK-Swift: e71127f9da6a72c61a22da9d8bb5981fac2984c9
   secp256k1.c: db47b726585d80f027423682eb369729e61b3b20
-  secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   Starscream: 19b5533ddb925208db698f0ac508a100b884a1b9
-  VerifiableSwift: 6177d90740a9eedb33f1673a02ee5708b7db616c
   Web3Core: 050eb18f0434ac16c42eb7b2270fbce325935128
   web3swift: 8496f6615c3a1f86e7c9e5fe16c5422ef181527b
 
-PODFILE CHECKSUM: 2b614dc8104582b5ed21d36d4d3b2b61703d105d
+PODFILE CHECKSUM: 6173fdae27c041ae814d75c0aa60caed5a72c776
 
 COCOAPODS: 1.15.2

@@ -1,7 +1,7 @@
 import XCTest
 import DID_SDK_Swift
-import VerifiableSwift
-import JWTsSwift
+//import VerifiableSwift
+//import JWTsSwift
 
 
 class Tests: XCTestCase {

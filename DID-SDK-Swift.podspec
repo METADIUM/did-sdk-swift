@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DID-SDK-Swift'
-  s.version          = '1.0.7'
+  s.version          = '1.0.8'
   s.swift_version    = '4.2'
   s.summary          = 'DID Create, Delete'
 
@@ -39,6 +39,5 @@ TODO: Add long description of the pod here.
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'web3swift'
-  s.dependency 'JOSESwift'
-  s.dependency 'VerifiableSwift'
+#  s.dependency 'JOSESwift'
 end

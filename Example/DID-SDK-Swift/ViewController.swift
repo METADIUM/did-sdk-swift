@@ -8,8 +8,6 @@
 
 import UIKit
 import DID_SDK_Swift
-import VerifiableSwift
-import JWTsSwift
 
 class ViewController: UIViewController {
     

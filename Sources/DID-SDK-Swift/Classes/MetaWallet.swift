@@ -10,9 +10,6 @@ import web3swift
 import Web3Core
 import BigInt
 import CryptoSwift
-import JOSESwift
-import JWTsSwift
-import VerifiableSwift
 import secp256k1
 
 public enum MetaTransactionType {

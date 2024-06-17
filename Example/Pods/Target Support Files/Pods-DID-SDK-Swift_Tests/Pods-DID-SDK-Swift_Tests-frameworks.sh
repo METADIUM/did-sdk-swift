@@ -178,28 +178,18 @@ code_sign_if_enabled() {
 if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/BigInt/BigInt.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/CryptoSwift/CryptoSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/JOSESwift/JOSESwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/JWTsSwift/JWTsSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/Starscream/Starscream.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/VerifiableSwift/VerifiableSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/Web3Core/Web3Core.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.c/secp256k1.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.swift/secp256k1.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/web3swift/web3swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/FBSnapshotTestCase/FBSnapshotTestCase.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/BigInt/BigInt.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/CryptoSwift/CryptoSwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/JOSESwift/JOSESwift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/JWTsSwift/JWTsSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/Starscream/Starscream.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/VerifiableSwift/VerifiableSwift.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/Web3Core/Web3Core.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.c/secp256k1.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/secp256k1.swift/secp256k1.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/web3swift/web3swift.framework"
-  install_framework "${BUILT_PRODUCTS_DIR}/FBSnapshotTestCase/FBSnapshotTestCase.framework"
 fi
 if [ "${COCOAPODS_PARALLEL_CODE_SIGN}" == "true" ]; then
   wait
