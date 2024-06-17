@@ -50,20 +50,19 @@ it, simply add the following line to your Podfile:
 
 ```ruby
 source 'https://github.com/CocoaPods/Specs.git'
-source 'https://github.com/METADIUM/Web3Swift-iOS'
 
 target 'project' do
-    pod 'DID-SDK-Swift', :git => 'https://github.com/METADIUM/did-sdk-swift.git'
+    pod 'DID-SDK-Swift'
 end
 ```
 
 
-### Swift Package (Recommended)
+### Swift Package
 The [Swift_Package_Manager](https://github.com/METADIUM/did-sdk-swift.git/ "")
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.0.7"))
+    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.0.8"))
 ]
 ```
 
