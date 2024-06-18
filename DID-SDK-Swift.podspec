@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DID-SDK-Swift'
-  s.version          = '1.0.8'
+  s.version          = '1.0.9'
   s.swift_version    = '4.2'
   s.summary          = 'DID Create, Delete'
 
@@ -32,12 +32,5 @@ TODO: Add long description of the pod here.
   s.ios.deployment_target = '15.0'
   
   s.source_files = 'Sources/DID-SDK-Swift/Classes/**/*'
-  
-  # s.resource_bundles = {
-  #   'DID-SDK-Swift' => ['DID-SDK-Swift/Assets/*.png']
-  # }
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'web3swift'
-#  s.dependency 'JOSESwift'
 end

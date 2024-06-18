@@ -204,7 +204,7 @@ public class MetaDelegator: NSObject {
             return nil
         }
         
-        print("publicKey: \(self.publicKey)")
+        print("publicKey: \(self.publicKey ?? "")")
         print("address: \(address)")
         
         return address

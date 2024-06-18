@@ -62,7 +62,7 @@ The [Swift_Package_Manager](https://github.com/METADIUM/did-sdk-swift.git/ "")
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.0.8"))
+    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.0.9"))
 ]
 ```
 

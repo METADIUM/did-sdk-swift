@@ -1,8 +1,5 @@
 import XCTest
 import DID_SDK_Swift
-//import VerifiableSwift
-//import JWTsSwift
-
 
 class Tests: XCTestCase {
     
@@ -30,84 +27,53 @@ class Tests: XCTestCase {
     
     
     func test() {
-        //메인넷
-//        let delegator = MetaDelegator.init()
-
-        //테스트넷
+        //메인넷 설정
+        /*
+        let delegator = MetaDelegator.init()
+         */
+        
+        
+        //테스트넷 설정
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",
                                       resolverUrl: "https://testnetresolver.metadium.com/1.0/identifiers/",
                                       didPrefix: "did:meta:testnet:",
                                       api_key: "")
         
+        var issuer: MetaWallet!
+        var user: MetaWallet!
         
         // 1. 발급자, 사용자 DID 생성
-        let issuerWallet = MetaWallet(delegator: delegator)
-        issuerWallet.createDID {
-            print(issuerWallet.getDid())
-        }
         
+        let semaPhore = DispatchSemaphore(value: 0)
         
-        let userWallet = MetaWallet(delegator: delegator)
-        userWallet.createDID {
-            print(userWallet.getDid())
-        }
-        
-        
-        
-        // Signing
-        let signatureData = issuerWallet.getSignature(data: Data())
-        
-        let signature = String(data: (signatureData?.signData)!, encoding: .utf8)?.addHexPrefix()
-        let r = signatureData?.r
-        let s = signatureData?.s
-        let v = signatureData?.v
-        
-        print(signature ?? "")
-        
-        
-        // 2. 사용자가 발급자에게 credential 발급 요청
-        let vpForIssueCredential = try? userWallet.issuePresentation(types: [],
-                                                                     id: nil,
-                                                                     nonce: nil,
-                                                                     issuanceDate: Date(),
-                                                                     expirationDate: nil,
-                                                                     vcList: [])?.serialize()
-        
-        
-        
-        // 3. 발급자가 DID 검증
-        
-        do {
-            let verified = try! MetaWallet.verify(jwt: JWSObject(string: vpForIssueCredential!!), resolverUrl: delegator.resolverUrl)
+        issuer = MetaWallet(delegator: delegator)
+        issuer.createDID {
             
-            if !verified {
-                //검증실패
-                XCTAssert(false, "vpForIssueCredential 검증 실패")
+            user = MetaWallet(delegator: delegator)
+            user.createDID {
+                self.verify(issuer: issuer, user: user, resolverUrl: delegator.resolverUrl)
+                
+                semaPhore.signal()
             }
-            
-        } catch verifyError.noneDidDocument {
-            
-        } catch verifyError.nonePublicKey {
-            
-        } catch verifyError.failedVerify {
-            
         }
         
-        
-        let vp = try? VerifiablePresentation(jws: JWSObject(string: vpForIssueCredential!!))
-        
+        semaPhore.wait()
+    }
+    
+    
+    func verify(issuer: MetaWallet, user: MetaWallet, resolverUrl: String) {
         //사용자의 DID
-        let holderDid = vp?.holder
+        let holderDid = user.getDid()
         
         let claims = ["name" : "YoungBaeJeon", "birth" : "19800101", "id" : "800101xxxxxxxx"]
         
-        let personalIdVC = try! issuerWallet.issueCredential(types: ["PersonalIdCredential"],
+        let personalIdVC = try! issuer.issueCredential(types: ["PersonalIdCredential"],
                                                         id: "http://aa.metadium.com/credential/name/343",
                                                         nonce: nil,
                                                         issuanceDate: Date(),
                                                         expirationDate: Date.init(timeIntervalSinceNow: 60 * 60),
-                                                        ownerDid: holderDid!,
+                                                        ownerDid: holderDid,
                                                              subjects: claims)?.serialize()
         
         //발급자가 사용자에게 personalIdVC 전달
@@ -126,8 +92,7 @@ class Tests: XCTestCase {
         
         let foundVcList = self.findVC(holderVcList: userVcList, typesOfRequiresVcs: [requireCredentialType])
         
-        
-        let vpForVerify = try? userWallet.issuePresentation(types: [requirePresentationName], id: nil, nonce: nil, issuanceDate: Date(), expirationDate: Date.init(timeIntervalSinceNow: 60 * 60), vcList: foundVcList)?.serialize()
+        let vpForVerify = try? user.issuePresentation(types: [requirePresentationName], id: nil, nonce: nil, issuanceDate: Date(), expirationDate: Date.init(timeIntervalSinceNow: 60 * 60), vcList: foundVcList)?.serialize()
         
         
         //사용자가 검증자에게 vpForVerify 제출
@@ -135,7 +100,7 @@ class Tests: XCTestCase {
         // 6. 검증자가 presentation 검증
         
         let vpJwt = try? JWSObject(string: vpForVerify!!)
-        let isVerify = try! MetaWallet.verify(jwt: vpJwt!, resolverUrl: delegator.resolverUrl)
+        let isVerify = try! MetaWallet.verify(jwt: vpJwt!, resolverUrl: resolverUrl)
         
         let jwt = try? JWT.init(jsonData: vpJwt!.payload)
         
@@ -158,7 +123,7 @@ class Tests: XCTestCase {
                 
                 let vcPayload = try! JWT.init(jsonData: signedVc.payload)
                 
-                if !(try! MetaWallet.verify(jwt: signedVc, resolverUrl: delegator.resolverUrl)) {
+                if !(try! MetaWallet.verify(jwt: signedVc, resolverUrl: resolverUrl)) {
                     XCTAssert(false)
                 }
                 else if vcPayload.expirationTime != nil && vcPayload.expirationTime! < Date() {
@@ -166,14 +131,14 @@ class Tests: XCTestCase {
                 }
                 
                 //credential 소유자 확인
-                if vcPayload.subject != userWallet.getDid() || presentorDid != userWallet.getDid() {
+                if vcPayload.subject != user.getDid() || presentorDid != user.getDid() {
                     XCTAssert(false)
                 }
                 
                 //요구하는 발급자가 발급한 credential 인지 확인
                 let credential = try! VerifiableCredential(jws: signedVc)
                 
-                if credential.issuer != issuerWallet.getDid() {
+                if credential.issuer != issuer.getDid() {
                     XCTAssert(false)
                 }
                 

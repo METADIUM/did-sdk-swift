@@ -36,9 +36,9 @@ public class MetaWallet: NSObject {
     var didDocument: DiDDocument!
 
     var transationType: MetaTransactionType!
-    
     var tryReceiptCount: Int = 0
     
+    var dispatchGroup = DispatchGroup()
     
     public init(delegator: MetaDelegator, jsonStr: String = "") {
         super.init()
@@ -88,6 +88,24 @@ public class MetaWallet: NSObject {
                 }
             }
         }
+    }
+    
+    
+    public func deleteDID(completion: @escaping() -> Void) {
+        
+        Task {
+            await self.deleteDID() { receipt in
+                guard let receipt = receipt else {
+                    return
+                }
+                
+                if receipt.status == .ok {
+
+                    completion()
+                }
+            }
+        }
+
     }
     
     private func generateKey() {
@@ -148,9 +166,6 @@ public class MetaWallet: NSObject {
                 return
             }
             
-            print("=== createIdentity_txID: \(txID ?? "")")
-            
-            
             Task {
                 self.transationType = type
                 await self.transactionReceipt(txId: txID!) { receipt in
@@ -199,7 +214,7 @@ public class MetaWallet: NSObject {
     }
     
     
-    public func deleteDID(completion: @escaping (Bool) -> Void) {
+    public func deleteDID(completion: @escaping (TransactionReceipt?) -> Void) async {
         self.tryReceiptCount = 0
         
         guard let signatureData = self.getRemovePublicKeySign() else {
@@ -225,12 +240,7 @@ public class MetaWallet: NSObject {
                         
                         print("removeTransactionReceipt:\(receipt.status)")
                         
-                        if receipt.status == .ok {
-                            completion(true)
-                            return
-                        }
-                        
-                        completion(false)
+                        completion(receipt)
                     }
                 }
             }
@@ -541,7 +551,6 @@ public class MetaWallet: NSObject {
             
             Task {
                 await self.transactionReceipt(txId: txId!) { receipt in
-                    print(receipt)
                     completion(receipt)
                 }
             }
@@ -755,10 +764,14 @@ public class MetaWallet: NSObject {
      */
     public func sign(verifiable: Verifiable, nonce: String?, claim: JWT?) throws -> JWSObject? {
         
+        guard let privateKeyData = self.privateKey else {
+            return nil
+        }
+        
         if let verify = verifiable as? VerifiableCredential {
             verify.issuer = self.getDid()
             
-            let privateKey = self.getInt32Byte(int: BigUInt((self.privateKey?.toHexString())!)!)
+            let privateKey = self.getInt32Byte(int: BigUInt(hex: privateKeyData.toHexString())!)
             
             let jwsObj = try verify.sign(kid: self.getKid()!, nonce: nonce, signer: ECDSASigner.init(privateKey: privateKey), baseClaims: claim)
             
@@ -768,7 +781,8 @@ public class MetaWallet: NSObject {
         if let verify = verifiable as? VerifiablePresentation {
             verify.holder = self.getDid()
             
-            let privateKey = self.getInt32Byte(int: BigUInt((self.privateKey?.toHexString())!)!)
+            
+            let privateKey = self.getInt32Byte(int: BigUInt(hex: privateKeyData.toHexString())!)
             
             return try verify.sign(kid: self.getKid()!, nonce: nonce, signer: ECDSASigner.init(privateKey: privateKey), baseClaims: claim)
         }

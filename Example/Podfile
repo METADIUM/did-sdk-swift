@@ -4,7 +4,6 @@ source 'https://github.com/CocoaPods/Specs.git'
 
 def import_pods
   pod 'web3swift'
-#  pod 'JOSESwift'
 end
 
 
@@ -18,10 +17,9 @@ target 'DID-SDK-Swift_Example' do
 
   target 'DID-SDK-Swift_Tests' do
     
+    use_frameworks!
     
     inherit! :search_paths
-
-#    pod 'FBSnapshotTestCase' , '~> 2.1.4'
     
     import_pods
     
