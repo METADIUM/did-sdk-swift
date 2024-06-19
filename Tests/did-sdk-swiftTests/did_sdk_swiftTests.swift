@@ -17,23 +17,37 @@ final class did_sdk_swiftTests: XCTestCase {
                                       didPrefix: "did:meta:testnet:",
                                       api_key: "")
         
-        var issuer: MetaWallet!
         var user: MetaWallet!
+        var issuer: MetaWallet!
+        
         
         // 1. 발급자, 사용자 DID 생성
-        issuer = MetaWallet(delegator: delegator)
+        user = MetaWallet(delegator: delegator)
         
         let semaPhore = DispatchSemaphore(value: 0)
         
-        issuer.createDID {
-
-            print(issuer.getDid())
-            
-            user = MetaWallet(delegator: delegator)
-            user.createDID {
-                
-                self.verify(issuer: issuer, user: user, resolverUrl: delegator.resolverUrl)
+        user.createDID { receipt, error in
+            if error != nil {
                 semaPhore.signal()
+                return
+            }
+            
+            if let receipt, receipt.status == .ok {
+                print(user.getDid())
+                
+                issuer = MetaWallet(delegator: delegator)
+                issuer.createDID { receipt, error in
+                    if error != nil {
+                        semaPhore.signal()
+                        return
+                    }
+                    
+                    if let receipt, receipt.status == .ok {
+                        self.verify(issuer: issuer, user: user, resolverUrl: delegator.resolverUrl)
+                    }
+                    
+                    semaPhore.signal()
+                }
             }
         }
         

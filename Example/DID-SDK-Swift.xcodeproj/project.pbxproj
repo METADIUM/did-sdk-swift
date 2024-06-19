@@ -35,7 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		013EA7CC2165ED216A2C8762 /* DID-SDK-Swift.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = "DID-SDK-Swift.podspec"; path = "../DID-SDK-Swift.podspec"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		013EA7CC2165ED216A2C8762 /* DID-SDK-Swift.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = "DID-SDK-Swift.podspec"; path = "../DID-SDK-Swift.podspec"; sourceTree = "<group>"; };
 		14B0C9FB70CB3A505465DC7C /* Pods-DID-SDK-Swift_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DID-SDK-Swift_Example.debug.xcconfig"; path = "Target Support Files/Pods-DID-SDK-Swift_Example/Pods-DID-SDK-Swift_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		607FACD01AFB9204008FA782 /* DID-SDK-Swift_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DID-SDK-Swift_Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACD41AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };

@@ -65,11 +65,17 @@ class ViewController: UIViewController {
         
         let userWallet = MetaWallet(delegator: self.delegator, jsonStr: self.userWalletJson)
         
-        userWallet.deleteDID {
-            DispatchQueue.main.async {
-                self.didLabel.text = ""
-                self.privateKeyLabel.text = ""
-                self.userWalletJson = ""
+        userWallet.deleteDID { receipt, error in
+            if error != nil {
+                return
+            }
+            
+            if let receipt, receipt.status == .ok {
+                DispatchQueue.main.async {
+                    self.didLabel.text = ""
+                    self.privateKeyLabel.text = ""
+                    self.userWalletJson = ""
+                }
             }
         }
     }
@@ -94,26 +100,33 @@ class ViewController: UIViewController {
         
         // 1. 사용자 DID 생성
         user = MetaWallet(delegator: self.delegator)
-        user.createDID {
-            
-            self.userWalletJson = user.toJson() ?? ""
-            
-            DispatchQueue.main.async {
-                if let key = user.getKey() {
-                    self.didLabel.text = user.getDid()
-                    self.privateKeyLabel.text = key.privateKey
-                }
+        user.createDID { receipt, error in
+            if error != nil {
+                return
             }
             
-            //2. 발급자 DID 생성
-            issuer = MetaWallet(delegator: self.delegator)
-            issuer.createDID {
-                
-                self.issuerWalletJson = issuer.toJson() ?? ""
-                
+            if let receipt, receipt.status == .ok {
                 DispatchQueue.main.async {
-                    self.activityView.stopAnimating()
-                    self.activityView.isHidden = true
+                    if let key = user.getKey() {
+                        self.didLabel.text = user.getDid()
+                        self.privateKeyLabel.text = key.privateKey
+                    }
+                }
+                
+                self.userWalletJson = user.toJson() ?? ""
+                
+                //2. 발급자 DID 생성
+                issuer = MetaWallet(delegator: self.delegator)
+                issuer.createDID { receipt, error in
+                    
+                    if let receipt, receipt.status == .ok {
+                        self.issuerWalletJson = issuer.toJson() ?? ""
+                        
+                        DispatchQueue.main.async {
+                            self.activityView.stopAnimating()
+                            self.activityView.isHidden = true
+                        }
+                    }
                 }
             }
         }
@@ -122,6 +135,12 @@ class ViewController: UIViewController {
     
     
     @IBAction func verifyButtonAction() {
+        
+        /*
+        self.userWalletJson = "{\"private_key\":\"36a9672899d7e805c4715a2437d68670209424a114f30e2e795532528e02795f\",\"did\":\"did:meta:testnet:0000000000000000000000000000000000000000000000000000000000071438\"}"
+         */
+        
+        
         if self.userWalletJson.isEmpty || self.issuerWalletJson.isEmpty {
             return
         }
@@ -130,6 +149,13 @@ class ViewController: UIViewController {
         let userWallet = MetaWallet(delegator: self.delegator, jsonStr: self.userWalletJson)
         
         self.verify(issuer: issuerWallet, user: userWallet, resolverUrl: delegator.resolverUrl)
+        
+        
+        Task {
+            await userWallet.existDid { isDid in
+                print(isDid)
+            }
+        }
     }
     
     

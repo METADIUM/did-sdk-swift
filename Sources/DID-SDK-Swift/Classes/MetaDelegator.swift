@@ -17,6 +17,7 @@ public class MetaDelegator: NSObject {
     public var publicKey: String!
     public var delegatorUrl: URL!
     public var resolverUrl: String!
+    public var nodeUrl: String!
     
     var node: Web3!
     
@@ -37,6 +38,7 @@ public class MetaDelegator: NSObject {
         
         self.delegatorUrl = URL(string: delegatorUrl!)
         self.resolverUrl = resolverUrl
+        self.nodeUrl = nodeUrl
         
         self.didPrefix = didPrefix!
         self.api_key = api_key
@@ -49,12 +51,10 @@ public class MetaDelegator: NSObject {
         
         let url = URL(string: nodeUrl!)
         
-        self.node = Web3.init(provider: Web3HttpProvider.init(url: url!, network: .Custom(networkID: BigUInt(chainID)!)))
-        
         self.getAllServiceAddress()
+        
+        self.node = Web3.init(provider: Web3HttpProvider.init(url: url!, network: .Custom(networkID: BigUInt(chainID)!)))
     }
-    
-    
     
     
     public func getAllServiceAddress() {

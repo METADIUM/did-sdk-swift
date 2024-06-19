@@ -63,6 +63,18 @@ public class MetaWallet: NSObject {
         
         self.delegator = delegator
         
+        var chainID = KDefine.kMeta_Main_ChainID
+        
+        if self.delegator.nodeUrl == KDefine.kMeta_Test_Node_URL {
+            chainID = KDefine.kMeta_Test_ChainID
+        }
+        
+        self.delegator.getAllServiceAddress()
+        
+        let url = URL(string: self.delegator.nodeUrl!)
+        
+        self.delegator.node = Web3.init(provider: Web3HttpProvider.init(url: url!, network: .Custom(networkID: BigUInt(chainID)!)))
+        
         if self.privateKey != nil {
             self.delegator.publicKey = self.getPublicKey()!
         }
@@ -72,37 +84,45 @@ public class MetaWallet: NSObject {
     /**
      secp256k1 지갑 키 생성
      */
-    public func createDID(completion: @escaping () -> Void) {
+    public func createDID(completion: @escaping (TransactionReceipt? , Error?) -> Void) {
         self.tryReceiptCount = 0
         
         self.generateKey()
         
         Task {
-            await self.createIdentity() { receipt in
-                guard let receipt = receipt else {
+            await self.createIdentity() { receipt, error in
+                
+                if error != nil {
+                    completion(nil, error)
                     return
                 }
                 
-                if receipt.status == .ok {
-                    completion()
+                guard let receipt = receipt else {
+                    completion(nil, nil)
+                    return
                 }
+                
+                completion(receipt, nil)
             }
         }
     }
     
     
-    public func deleteDID(completion: @escaping() -> Void) {
+    public func deleteDID(completion: @escaping(TransactionReceipt?, Error?) -> Void) {
         
         Task {
-            await self.deleteDID() { receipt in
-                guard let receipt = receipt else {
+            await self.deleteDID() { receipt, error in
+                if error != nil {
+                    completion(nil, error)
                     return
                 }
                 
-                if receipt.status == .ok {
-
-                    completion()
+                guard let receipt = receipt else {
+                    completion(nil, nil)
+                    return
                 }
+                
+                completion(receipt, nil)
             }
         }
 
@@ -153,16 +173,17 @@ public class MetaWallet: NSObject {
     /**
      DID 생성
      */
-    public func createIdentity(completion: @escaping(TransactionReceipt?) -> Void) async {
+    public func createIdentity(completion: @escaping(TransactionReceipt?, Error?) -> Void) async {
         
         guard let signatureData = self.getCreateKeySignature() else {
+            completion(nil, nil)
             return
         }
         
         self.delegator.createIdentityDelegated(signatureData: signatureData) { (type, txID, error) in
             
             if error != nil {
-                completion(nil)
+                completion(nil, error)
                 return
             }
             
@@ -170,6 +191,7 @@ public class MetaWallet: NSObject {
                 self.transationType = type
                 await self.transactionReceipt(txId: txID!) { receipt in
                     guard let receipt = receipt else {
+                        completion(nil, nil)
                         return
                     }
                     
@@ -177,7 +199,7 @@ public class MetaWallet: NSObject {
                     self.did = ""
                     
                     self.getEin(receipt: receipt) { receipt in
-                        completion(receipt)
+                        completion(receipt, nil)
                     }
                 }
             }
@@ -214,7 +236,7 @@ public class MetaWallet: NSObject {
     }
     
     
-    public func deleteDID(completion: @escaping (TransactionReceipt?) -> Void) async {
+    public func deleteDID(completion: @escaping (TransactionReceipt?, Error?) -> Void) async {
         self.tryReceiptCount = 0
         
         guard let signatureData = self.getRemovePublicKeySign() else {
@@ -223,6 +245,7 @@ public class MetaWallet: NSObject {
         
         self.delegator.removePublicKeyDelegated(signatureData: signatureData) { (type, txID, error) in
             if error != nil {
+                completion(nil, nil)
                 return
             }
             
@@ -240,7 +263,7 @@ public class MetaWallet: NSObject {
                         
                         print("removeTransactionReceipt:\(receipt.status)")
                         
-                        completion(receipt)
+                        completion(receipt, nil)
                     }
                 }
             }
@@ -546,6 +569,8 @@ public class MetaWallet: NSObject {
         self.delegator.addPublicKeyDelegated(signatureData: signatureData) { (type, txId, error) in
             
             if error != nil {
+                completion(nil)
+                
                 return
             }
             
@@ -557,18 +582,14 @@ public class MetaWallet: NSObject {
         }
     }
     
-    /*
-    public func existDid() throws -> Bool {
+    
+    public func existDid(completion: @escaping(Bool) -> Void) async {
         guard let address = self.getWalletAddress() else {
-            return nil
+            completion(false)
+            return
         }
         
-        var isEin: Bool = false
-        
-        let semaPhore = DispatchSemaphore(value: 0)
-        
         let identity = self.delegator.registryAddress?.identityRegistry
-        
         
         let abiString = """
             [{
@@ -592,78 +613,23 @@ public class MetaWallet: NSObject {
                 }]
             """
         
-        let contract = Web3.Contract(abiString: abiString, at: EthereumAddress(identity))
-        
-        guard let readOperation = contract.createReadOperation("hasIdentity", parameters: [address]),
-              let readed = try? await readOperation?.callContractMethod() else {
+        guard let contract = self.delegator.node.contract(abiString, at: EthereumAddress(identity!)),
+              let readOperation = contract.createReadOperation("hasIdentity", parameters: [address]),
+              let readed = try? await readOperation.callContractMethod() else {
+                  
+              completion(false)
             return
         }
         
-        let value = readed.values.first
-        print(value)
         
-        
-        
-        let contract = EthereumJSONContract.init(json:
-            """
-            [{
-                  "constant": true,
-                  "inputs": [
-                    {
-                      "name": "_address",
-                      "type": "address"
-                    }
-                  ],
-                  "name": "hasIdentity",
-                  "outputs": [
-                    {
-                      "name": "",
-                      "type": "bool"
-                    }
-                  ],
-                  "payable": false,
-                  "stateMutability": "view",
-                  "type": "function"
-                }]
-            """, address: (EthereumAddress(identity!)!))
-        
-        let transaction = try? contract!.transaction(function: "hasIdentity", args: [(self.keyStore?.addresses?.first!.address)!])
-        
-        self.delegator.ethereumClient!.eth_call(transaction!) { (error, data) in
-            //id data가 없을 경우
-            if data == nil || data!.isEqual("0x") {
-                NSLog("NO ID DATA ERROR")
-                
-                return
-            }
+        if let value = readed.values.first as? Bool {
+            completion(value)
             
-            do {
-                let decoded = try ABIDecoder.decodeData(data!, types: ["bool"]) as! [String]
-                print(decoded)
-
-                let status = decoded[0]
-                
-                //id data가 있을 경우
-                if status.isEqual("0x01") {
-                    isEin = true
-                    
-                } else {
-                    NSLog("NO EIN ERROR")
-
-                }
-            } catch let error {
-                
-                print(error.localizedDescription)
-            }
-            
-            semaPhore.signal()
+            return
         }
         
-        semaPhore.wait()
-        
-        return isEin
+        completion(false)
     }
-    */
     
     static public func getDiDDocument(did: String? = "", resolverUrl: String) -> DiDDocument? {
             

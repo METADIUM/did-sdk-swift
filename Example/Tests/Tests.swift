@@ -27,34 +27,38 @@ class Tests: XCTestCase {
     
     
     func test() {
-        //메인넷 설정
-        /*
-        let delegator = MetaDelegator.init()
-         */
-        
-        
-        //테스트넷 설정
         let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
                                       nodeUrl: "https://api.metadium.com/dev",
                                       resolverUrl: "https://testnetresolver.metadium.com/1.0/identifiers/",
                                       didPrefix: "did:meta:testnet:",
                                       api_key: "")
         
-        var issuer: MetaWallet!
-        var user: MetaWallet!
-        
-        // 1. 발급자, 사용자 DID 생성
-        
         let semaPhore = DispatchSemaphore(value: 0)
         
-        issuer = MetaWallet(delegator: delegator)
-        issuer.createDID {
-            
-            user = MetaWallet(delegator: delegator)
-            user.createDID {
-                self.verify(issuer: issuer, user: user, resolverUrl: delegator.resolverUrl)
-                
+        // 1. 발급자, 사용자 DID 생성
+        let user = MetaWallet(delegator: delegator)
+        
+        user.createDID { receipt, error in
+            if error != nil {
                 semaPhore.signal()
+                return
+            }
+            
+            if let receipt, receipt.status == .ok {
+                let issuer = MetaWallet(delegator: delegator)
+                
+                issuer.createDID { receipt, error in
+                    if error != nil {
+                        semaPhore.signal()
+                        return
+                    }
+                    
+                    if let receipt, receipt.status == .ok {
+                        self.verify(issuer: issuer, user: user, resolverUrl: delegator.resolverUrl)
+                        
+                        semaPhore.signal()
+                    }
+                }
             }
         }
         

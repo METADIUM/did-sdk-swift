@@ -125,13 +125,18 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 
 ```Swift
     let wallet = MetaWallet(delegator: delegator)
-    wallet.createDID {
-        DispatchQueue.main.asyncAfter(deadline: .now()) {
-            let did = wallet.getDid()                       // 생성된 DID ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0 
-            let kid = wallet.getKid()                       // 생성된 private key의 id ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0#MetaManagementKey#234f9445cd405a2a454245b94f7bc5e9286912eb
-            
-            let key = wallet.getKey()
-            let priateKey = key?.privateKey
+    wallet.createDID { receipt, error in
+        if error != nil {
+            return
+        }
+        
+        if let receipt, receipt.status == .ok {
+            let did = wallet.getDid()         // 생성된 DID ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0 
+            let kid = wallet.getKid()         // 생성된 private key의 id ex) did:meta:00000000000000000000000000000000000000000000000000000000000432a0#MetaManagementKey#234f9445cd405a2a454245b94f7bc5e9286912eb
+        
+            if let key = wallet.getKey() {
+                let priateKey = key.privateKey
+            }
         }
     }
     
@@ -141,8 +146,14 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 DID를 삭제합니다.
  
 ```Swift
-    wallet.deleteDID { finished in
+    wallet.deleteDID { receipt, error in
+        if error != nil {
+            return
+        }
         
+        if let receipt, receipt.status == .ok {
+            //Todo...
+        }
     }
 }
 ```
