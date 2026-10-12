@@ -30,10 +30,12 @@ public enum MetaWalletError: Error {
     case conflictingKeyMode
     /// 트랜잭션 receipt 를 받지 못했다.
     case receiptNotFound
-    /// create_identity 트랜잭션에서 IdentityCreated 이벤트를 찾지 못했다.
-    /// receipt 의 status 를 확인하지 않으므로 트랜잭션이 revert 된 경우에도 이 오류가 난다. identity 가 생성되었을 수도, 아닐 수도 있다.
-    /// DID 를 알 수 없고 되돌리지 않는다. existDid 로 확인할 수 있으나 조회 실패도 false 이고 DID 는 알려 주지 않는다.
+    /// create_identity 트랜잭션은 성공했지만(status ok) receipt 에서 IdentityCreated 이벤트를 찾지 못했다.
+    /// identity 는 체인에 생성되었을 가능성이 크다. DID 를 알 수 없고 되돌리지 않는다.
+    /// existDid 로 확인할 수 있으나 조회 실패도 false 이고 DID 는 알려 주지 않는다.
     case eventNotFound
+    /// 트랜잭션이 revert 되었다 (receipt 의 status 가 failed). 해당 트랜잭션의 변경은 체인에 반영되지 않았다.
+    case transactionFailed(txId: String)
     /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
     case partialCreation(did: String, underlying: Error?)
 }
@@ -306,6 +308,12 @@ public class MetaWallet: NSObject {
                         return
                     }
                     
+                    // revert 된 트랜잭션은 identity 를 만들지 않았다. 이벤트를 찾지 않고 바로 알린다.
+                    if receipt.status == .failed {
+                        completion(nil, MetaWalletError.transactionFailed(txId: txID))
+                        return
+                    }
+                    
                     self.metaID = ""
                     self.did = ""
                     
@@ -384,6 +392,11 @@ public class MetaWallet: NSObject {
                         }
                         
                         print("removeTransactionReceipt:\(receipt.status)")
+                        
+                        if receipt.status == .failed {
+                            completion(nil, MetaWalletError.transactionFailed(txId: txID))
+                            return
+                        }
                         
                         completion(receipt, nil)
                     }
@@ -730,6 +743,12 @@ public class MetaWallet: NSObject {
                 await self.transactionReceipt(txId: txId) { receipt in
                     guard let receipt = receipt else {
                         completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: MetaWalletError.receiptNotFound))
+                        return
+                    }
+                    
+                    // identity 는 생성되었지만 공개키 등록이 revert 되었다.
+                    if receipt.status == .failed {
+                        completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: MetaWalletError.transactionFailed(txId: txId)))
                         return
                     }
                     
