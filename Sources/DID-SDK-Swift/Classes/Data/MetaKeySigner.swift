@@ -12,7 +12,7 @@ import BigInt
 /// 개인키는 SDK 로 전달되지 않으며 SDK 는 공개키와 32바이트 다이제스트에 대한 서명만 필요로 한다.
 public protocol MetaKeySigner {
 
-    /// secp256k1 공개키. 비압축 형식. 64바이트(X||Y) 또는 0x04 접두를 포함한 65바이트.
+    /// secp256k1 공개키. 64바이트(X||Y), 0x04 접두를 포함한 65바이트, 압축 33바이트 또는 SubjectPublicKeyInfo DER. 곡선 위의 점이어야 한다.
     var publicKey: Data { get }
 
     /// 다이제스트에 추가 해시 없이 그대로 서명한다.
@@ -38,17 +38,33 @@ enum ExternalSignatureUtils {
     /// secp256k1 curve order
     static let curveOrder = BigUInt("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", radix: 16)!
 
-    /// 0x04 접두를 제거한 64바이트 공개키
+    /// 키 보관 서비스가 준 공개키를 0x04 접두 없는 64바이트 X||Y 로 변환한다.
+    /// 지원 형식: X||Y (64바이트), 0x04||X||Y (65바이트), 압축 (33바이트), X.509 SubjectPublicKeyInfo DER
+    /// (AWS KMS, Google Cloud KMS GetPublicKey. 끝의 65바이트가 비압축 점).
+    /// secp256k1 곡선 위의 점이 아니면 invalidPublicKey 를 던진다.
     static func rawPublicKey(_ publicKey: Data) throws -> Data {
-        if publicKey.count == 64 {
-            return publicKey
+        let bytes = [UInt8](publicKey)
+        let point: [UInt8]
+
+        if bytes.count == 64 {
+            point = [0x04] + bytes
+        } else if bytes.count == 65 && bytes[0] == 0x04 {
+            point = bytes
+        } else if bytes.count == 33 && (bytes[0] == 0x02 || bytes[0] == 0x03) {
+            point = bytes
+        } else if bytes.count > 65 && bytes[bytes.count - 65] == 0x04 {
+            point = Array(bytes[(bytes.count - 65)...])
+        } else {
+            throw MetaKeySignerError.invalidPublicKey
         }
 
-        if publicKey.count == 65 && publicKey[publicKey.startIndex] == 0x04 {
-            return Data(publicKey.dropFirst())
+        // 점을 파싱해서 곡선 위의 점인지 확인하고 비압축 형식으로 직렬화한다.
+        guard let serialized = Web3Core.SECP256K1.combineSerializedPublicKeys(keys: [Data(point)], outputCompressed: false),
+              serialized.count == 65 else {
+            throw MetaKeySignerError.invalidPublicKey
         }
 
-        throw MetaKeySignerError.invalidPublicKey
+        return Data(serialized.dropFirst())
     }
 
     /// 32바이트로 패딩
@@ -72,6 +88,11 @@ enum ExternalSignatureUtils {
             r = pair.0
             s = pair.1
         } else {
+            throw MetaKeySignerError.invalidSignature
+        }
+
+        // 0 < r, s < n. 이 범위를 벗어난 값은 아래 감산에서 BigUInt 가 trap(crash) 되므로 먼저 거른다.
+        guard r > 0, r < curveOrder, s > 0, s < curveOrder else {
             throw MetaKeySignerError.invalidSignature
         }
 
