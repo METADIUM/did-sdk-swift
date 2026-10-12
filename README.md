@@ -215,7 +215,9 @@ struct KeyStoreSigner: MetaKeySigner {
     var publicKey: Data { return keyStore.publicKey(keyId) }
 
     // 다이제스트를 그대로 서명한다. r||s (64바이트) 또는 r||s||v (65바이트) 를 반환한다.
+    // AWS KMS, Google Cloud KMS 가 반환하는 ASN.1 DER 도 그대로 반환하면 된다.
     // v 가 없거나 달라도 SDK 가 공개키로 복원하며, s 가 크면 low-s 로 변환한다.
+    // 동기 호출이며 보통 네트워크 호출이므로 메인 스레드가 아닌 백그라운드 큐에서 호출한다.
     func signDigest(_ digest: Data) throws -> Data {
         return try keyStore.sign(keyId, digest)
     }
@@ -230,7 +232,7 @@ wallet.createDID(signer: signer) { receipt, error in
 }
 
 // 이미 생성된 DID 의 지갑
-let wallet = MetaWallet(delegator: delegator, signer: signer, did: did)
+let existingWallet = MetaWallet(delegator: delegator, signer: signer, did: did)
 
 // Credential, Presentation 발급. 외부 서명자를 사용하는 지갑은 자동으로 외부 키로 서명한다.
 let vc = try wallet.issueCredential(types: ["StudentCredential"], id: nil, nonce: nil, issuanceDate: nil, expirationDate: nil, ownerDid: holderDid, subjects: claims)
@@ -242,6 +244,8 @@ let vp = try wallet.issuePresentation(types: ["TestPresentation"], id: nil, nonc
 * 개인키가 없으므로 `toJson()` 은 `nil` 을, `getKey()?.privateKey` 는 `nil` 을 반환합니다.
 * Delegator 요청은 `\x19Ethereum Signed Message:\n32` 접두를 붙인 해시(personal message)를 서명하며 v 는 27 또는 28 입니다. `MetaKeySigner` 는 SDK 가 계산한 다이제스트를 받습니다.
 * VC, VP(ES256K)는 JWS signing input 의 SHA-256 다이제스트를 서명하며 결과는 r||s (64바이트, low-s) 입니다.
+* `MetaKeySigner` 는 항상 최종 다이제스트를 받으며 추가 해시 없이 그대로 서명해야 합니다. did-sdk-java 는 이더리움 접두 없이 keccak256 다이제스트를 서명하고 이 SDK 는 접두를 붙인 personal message 해시를 서명하므로, 두 SDK 를 모두 쓰는 키 보관 서비스는 SDK 마다 다른 다이제스트를 받으며 delegator 는 둘 다 허용합니다.
+* 서명이 공개키와 맞는지 확인합니다. 키 보관 서비스가 다른 키로 서명하면 검증자 단계가 아니라 서명 시점에 `MetaKeySignerError.signatureMismatch` 로 실패합니다.
 
 ### Verifiable Credential
 
