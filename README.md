@@ -205,6 +205,44 @@ DID의 키로 서명([Elliptic Curve Digital Signature Algorithm](https://en.wik
     let v = signatureData?.v
 ```
 
+### 외부 키 보관 서비스
+
+개인키를 외부 키 보관 서비스(HSM, KMS, 지갑 서비스)에 두고 SDK 에는 전달하지 않을 수 있습니다. 공개키와 32바이트 다이제스트를 서명해 주는 `MetaKeySigner` 만 구현하면 됩니다.
+
+```swift
+struct KeyStoreSigner: MetaKeySigner {
+    // 비압축 secp256k1 공개키. 64바이트(X||Y) 또는 0x04 접두를 포함한 65바이트
+    var publicKey: Data { return keyStore.publicKey(keyId) }
+
+    // 다이제스트를 그대로 서명한다. r||s (64바이트) 또는 r||s||v (65바이트) 를 반환한다.
+    // v 가 없거나 달라도 SDK 가 공개키로 복원하며, s 가 크면 low-s 로 변환한다.
+    func signDigest(_ digest: Data) throws -> Data {
+        return try keyStore.sign(keyId, digest)
+    }
+}
+
+let signer = KeyStoreSigner()
+
+// DID 생성
+let wallet = MetaWallet(delegator: delegator, signer: signer)
+wallet.createDID(signer: signer) { receipt, error in
+    // receipt.status == .ok
+}
+
+// 이미 생성된 DID 의 지갑
+let wallet = MetaWallet(delegator: delegator, signer: signer, did: did)
+
+// Credential, Presentation 발급. 외부 서명자를 사용하는 지갑은 자동으로 외부 키로 서명한다.
+let vc = try wallet.issueCredential(types: ["StudentCredential"], id: nil, nonce: nil, issuanceDate: nil, expirationDate: nil, ownerDid: holderDid, subjects: claims)
+
+// JWSSigner 를 직접 지정할 수도 있다.
+let vp = try wallet.issuePresentation(types: ["TestPresentation"], id: nil, nonce: nil, issuanceDate: nil, expirationDate: nil, vcList: vcList, jwsSigner: ExternalJWSSigner(signer: signer))
+```
+
+* 개인키가 없으므로 `toJson()` 은 `nil` 을, `getKey()?.privateKey` 는 `nil` 을 반환합니다.
+* Delegator 요청은 `\x19Ethereum Signed Message:\n32` 접두를 붙인 해시(personal message)를 서명하며 v 는 27 또는 28 입니다. `MetaKeySigner` 는 SDK 가 계산한 다이제스트를 받습니다.
+* VC, VP(ES256K)는 JWS signing input 의 SHA-256 다이제스트를 서명하며 결과는 r||s (64바이트, low-s) 입니다.
+
 ### Verifiable Credential
 
 Verifiable credential, Verifiable presentation 을 발급 및 검증 하는 방법을 설명합니다.
