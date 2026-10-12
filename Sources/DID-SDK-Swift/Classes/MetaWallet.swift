@@ -19,6 +19,23 @@ public enum MetaTransactionType {
     case removeAssociatedAddress
 }
 
+public enum MetaWalletError: Error {
+    /// 서명에 필요한 정보(registry 주소, 키, DID)가 아직 없다.
+    case notReady
+    /// DID 가 없어 kid 를 만들 수 없다.
+    case noDid
+    /// 서명이 지갑의 키로 만들어진 것이 아니다. kid 는 지갑의 키를 가리킨다.
+    case signerMismatch
+    /// 개인키를 가진 지갑에 외부 서명자로 DID 를 생성하려 했다. 개인키 모드와 외부 서명자 모드는 함께 쓸 수 없다.
+    case conflictingKeyMode
+    /// 트랜잭션 receipt 를 받지 못했다.
+    case receiptNotFound
+    /// create_identity 트랜잭션에서 IdentityCreated 이벤트를 찾지 못했다.
+    case eventNotFound
+    /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
+    case partialCreation(did: String, underlying: Error?)
+}
+
 public enum verifyError: Error {
     case networkError
     case noneDidDocument
@@ -33,6 +50,10 @@ public class MetaWallet: NSObject {
     var metaID: String = ""
     var did: String = ""
     var privateKey: Data?
+    /// 외부 키 보관 서비스를 사용하는 경우의 서명자. 설정되면 privateKey 는 사용하지 않는다.
+    var signer: MetaKeySigner?
+    /// signer 의 공개키. 0x04 접두 없는 64바이트 X||Y. 지갑을 만들 때 한 번 검증해서 보관한다.
+    var signerPublicKey: Data?
     var didDocument: DiDDocument!
 
     var transationType: MetaTransactionType!
@@ -61,6 +82,31 @@ public class MetaWallet: NSObject {
             }
         }
         
+        self.configure(delegator: delegator)
+    }
+    
+    
+    /**
+     외부 키 보관 서비스에 개인키가 있는 지갑.
+     - Parameters:
+       - delegator: MetaDelegator
+       - signer: 외부 키 보관 서비스 서명자
+       - did: 이미 생성된 DID. 새로 생성하는 경우에는 비워두고 createDID(signer:completion:) 를 호출한다.
+     - Throws: 공개키 형식이 틀리거나 secp256k1 곡선 위의 점이 아니면 MetaKeySignerError.invalidPublicKey
+     */
+    public init(delegator: MetaDelegator, signer: MetaKeySigner, did: String = "") throws {
+        super.init()
+        
+        // 공개키 형식이 틀리거나 곡선 위의 점이 아니면 지갑을 만들지 않는다.
+        self.signerPublicKey = try ExternalSignatureUtils.rawPublicKey(signer.publicKey)
+        self.signer = signer
+        self.did = did
+        
+        self.configure(delegator: delegator)
+    }
+    
+    
+    private func configure(delegator: MetaDelegator) {
         self.delegator = delegator
         
         var chainID = KDefine.kMeta_Main_ChainID
@@ -75,8 +121,8 @@ public class MetaWallet: NSObject {
         
         self.delegator.node = Web3.init(provider: Web3HttpProvider.init(url: url!, network: .Custom(networkID: BigUInt(chainID)!)))
         
-        if self.privateKey != nil {
-            self.delegator.publicKey = self.getPublicKey()!
+        if self.privateKey != nil || self.signer != nil, let publicKey = self.getPublicKey() {
+            self.delegator.publicKey = publicKey
         }
     }
     
@@ -85,6 +131,12 @@ public class MetaWallet: NSObject {
      secp256k1 지갑 키 생성
      */
     public func createDID(completion: @escaping (TransactionReceipt? , Error?) -> Void) {
+        // 외부 서명자를 가진 지갑은 로컬 키를 만들지 않고 서명자로 생성한다.
+        if let signer = self.signer {
+            self.createDID(signer: signer, completion: completion)
+            return
+        }
+        
         self.tryReceiptCount = 0
         
         self.generateKey()
@@ -104,6 +156,38 @@ public class MetaWallet: NSObject {
                 
                 completion(receipt, nil)
             }
+        }
+    }
+    
+    
+    /**
+     외부 키 보관 서비스의 키로 DID 를 생성한다. 개인키는 SDK 로 전달되지 않는다.
+     */
+    public func createDID(signer: MetaKeySigner, completion: @escaping (TransactionReceipt? , Error?) -> Void) {
+        
+        // 개인키를 가진 지갑을 외부 서명자로 바꾸지 않는다.
+        if self.privateKey != nil {
+            Task { completion(nil, MetaWalletError.conflictingKeyMode) }
+            return
+        }
+        
+        let publicKey: Data
+        
+        do {
+            publicKey = try ExternalSignatureUtils.rawPublicKey(signer.publicKey)
+        } catch {
+            Task { completion(nil, error) }
+            return
+        }
+        
+        self.tryReceiptCount = 0
+        
+        self.signer = signer
+        self.signerPublicKey = publicKey
+        self.delegator.publicKey = self.getPublicKey()
+        
+        Task {
+            await self.createIdentity(completion: completion)
         }
     }
     
@@ -140,6 +224,14 @@ public class MetaWallet: NSObject {
     
     
     private func getPublicKeyData() -> Data? {
+        if self.signer != nil {
+            guard let raw = self.signerPublicKey else {
+                return nil
+            }
+            
+            return Data([0x04]) + raw
+        }
+        
         guard let privateKey = self.privateKey,
               let pubKeyData = Web3Core.SECP256K1.privateToPublic(privateKey: privateKey, compressed: false) else {
             return nil
@@ -154,6 +246,14 @@ public class MetaWallet: NSObject {
      privateKey로 publicKey를 가져온다.
      */
     private func getPublicKey() -> String? {
+        
+        if self.signer != nil {
+            guard let raw = self.signerPublicKey else {
+                return nil
+            }
+            
+            return "0x" + raw.toHexString()
+        }
         
         guard let privateKey = self.privateKey,
               let pubKeyData = Web3Core.SECP256K1.privateToPublic(privateKey: privateKey, compressed: false) else {
@@ -175,8 +275,12 @@ public class MetaWallet: NSObject {
      */
     public func createIdentity(completion: @escaping(TransactionReceipt?, Error?) -> Void) async {
         
-        guard let signatureData = self.getCreateKeySignature() else {
-            completion(nil, nil)
+        let signatureData: SignatureData
+        
+        do {
+            signatureData = try self.createKeySignature()
+        } catch {
+            completion(nil, error)
             return
         }
         
@@ -187,19 +291,24 @@ public class MetaWallet: NSObject {
                 return
             }
             
+            guard let txID = txID else {
+                completion(nil, MetaWalletError.notReady)
+                return
+            }
+            
             Task {
                 self.transationType = type
-                await self.transactionReceipt(txId: txID!) { receipt in
+                await self.transactionReceipt(txId: txID) { receipt in
                     guard let receipt = receipt else {
-                        completion(nil, nil)
+                        completion(nil, MetaWalletError.receiptNotFound)
                         return
                     }
                     
                     self.metaID = ""
                     self.did = ""
                     
-                    self.getEin(receipt: receipt) { receipt in
-                        completion(receipt, nil)
+                    self.getEin(receipt: receipt) { receipt, error in
+                        completion(receipt, error)
                     }
                 }
             }
@@ -239,25 +348,36 @@ public class MetaWallet: NSObject {
     public func deleteDID(completion: @escaping (TransactionReceipt?, Error?) -> Void) async {
         self.tryReceiptCount = 0
         
-        guard let signatureData = self.getRemovePublicKeySign() else {
+        let signatureData: SignatureData
+        
+        do {
+            signatureData = try self.removePublicKeySignature()
+        } catch {
+            completion(nil, error)
             return
         }
         
         self.delegator.removePublicKeyDelegated(signatureData: signatureData) { (type, txID, error) in
             if error != nil {
-                completion(nil, nil)
+                completion(nil, error)
+                return
+            }
+            
+            guard let txID = txID else {
+                completion(nil, MetaWalletError.notReady)
                 return
             }
             
             self.transationType = type
             
-            print("removePublicKey_txID: \(txID ?? "")")
+            print("removePublicKey_txID: \(txID)")
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 Task {
-                    await self.transactionReceipt(txId: txID!) { receipt in
+                    await self.transactionReceipt(txId: txID) { receipt in
                         
                         guard let receipt = receipt else {
+                            completion(nil, MetaWalletError.receiptNotFound)
                             return
                         }
                         
@@ -296,17 +416,27 @@ public class MetaWallet: NSObject {
     }
 
     
-    private func signPersonalData(data: Data) -> Data? {
+    private func signPersonalData(data: Data) throws -> Data {
         
-        guard let privateKey = self.privateKey,
-              let keyStore = PlainKeystore(privateKey: privateKey.toHexString()),
-              let address = MetaUtils.getAddress(publicKey: self.getPublicKey()!),
-              let account = EthereumAddress(address) else {
-            return nil
+        if let signer = self.signer {
+            guard let hash = ExternalSignatureUtils.personalMessageHash(data) else {
+                throw MetaWalletError.notReady
+            }
+            
+            // 서명자의 오류를 그대로 전달한다.
+            return try ExternalSignatureUtils.sign65(digest: hash, signer: signer)
         }
         
-        guard let signature = try? Web3Signer.signPersonalMessage(data, keystore: keyStore, account: account, password: "web3swift") else {
-            return nil
+        guard let privateKey = self.privateKey,
+              let publicKey = self.getPublicKey(),
+              let keyStore = PlainKeystore(privateKey: privateKey.toHexString()),
+              let address = MetaUtils.getAddress(publicKey: publicKey),
+              let account = EthereumAddress(address) else {
+            throw MetaWalletError.notReady
+        }
+        
+        guard let signature = try Web3Signer.signPersonalMessage(data, keystore: keyStore, account: account, password: "web3swift") else {
+            throw MetaWalletError.notReady
         }
         
         return signature
@@ -314,13 +444,10 @@ public class MetaWallet: NSObject {
 
     
     /**
-     * @param  sign data
+     * 서명 오류를 던지는 버전. 서명자(키 보관 서비스)의 오류를 그대로 전달한다.
      */
-    
-    public func getSignature(data: Data) -> SignatureData? {
-        guard let signature = self.signPersonalData(data: data) else {
-            return nil
-        }
+    func signature(data: Data) throws -> SignatureData {
+        let signature = try self.signPersonalData(data: data)
         
         let r = signature.subdata(in: 0..<32).toHexString()
         let s = signature.subdata(in: 32..<64).toHexString()
@@ -328,19 +455,26 @@ public class MetaWallet: NSObject {
         
         let signData = (r + s + v).data(using: .utf8)
         
-        let signatureData = SignatureData(signData: signData!, r: r.addHexPrefix(), s: s.addHexPrefix(), v: v.addHexPrefix())
-        
-        return signatureData
+        return SignatureData(signData: signData!, r: r.addHexPrefix(), s: s.addHexPrefix(), v: v.addHexPrefix())
+    }
+    
+    
+    /**
+     * @param  sign data
+     */
+    
+    public func getSignature(data: Data) -> SignatureData? {
+        return try? self.signature(data: data)
     }
     
     
     /**
      * create_identity delegate sign
      */
-    public func getCreateKeySignature() -> SignatureData? {
+    func createKeySignature() throws -> SignatureData {
         
         if self.delegator.registryAddress == nil {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         let resolvers = self.delegator.registryAddress!.resolvers
@@ -349,7 +483,7 @@ public class MetaWallet: NSObject {
         
         guard let publicKey = self.getPublicKey(),
               let addr = MetaUtils.getAddress(publicKey: publicKey) else {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         let temp = Data([0x19, 0x00])
@@ -393,11 +527,7 @@ public class MetaWallet: NSObject {
         
         let data = (temp + identity! + msg! + ass! + ass! + proviData + resolData + timeData).sha3(.keccak256)
         
-        guard let signature = self.getSignature(data: data) else {
-            return nil
-        }
-        
-        return signature
+        return try self.signature(data: data)
     }
     
     
@@ -406,15 +536,15 @@ public class MetaWallet: NSObject {
      * add_public_key_delegated sign
      */
 
-    public func getPublicKeySignature() -> SignatureData? {
+    func publicKeySignature() throws -> SignatureData {
         
         if self.delegator.registryAddress == nil {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         guard let publicKey = self.getPublicKey(),
               let address = MetaUtils.getAddress(publicKey: publicKey) else {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         let publicKeyResolverAddress = self.delegator.registryAddress!.publicKey
@@ -442,24 +572,20 @@ public class MetaWallet: NSObject {
 
         let data = (temp + pubKeyData! + msg! + addrdata! + publicKeyData! + timeData).sha3(.keccak256)
 
-        guard let signature = self.getSignature(data: data) else {
-            return nil
-        }
-        
-        return signature
+        return try self.signature(data: data)
     }
     
 
     
     
-    public func getRemovePublicKeySign() -> SignatureData? {
+    func removePublicKeySignature() throws -> SignatureData {
         
         if self.delegator.registryAddress == nil {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         guard let address = self.getWalletAddress() else {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         let publicKey = self.delegator.registryAddress!.publicKey
@@ -486,22 +612,18 @@ public class MetaWallet: NSObject {
         
         let data = (temp + publickeyData! + msg! + associateAddrData! + timeData).sha3(.keccak256)
         
-        guard let signature = self.getSignature(data: data) else {
-            return nil
-        }
-        
-        return signature
+        return try self.signature(data: data)
     }
     
     
-    public func getRemoveAssociatedAddressSign() -> SignatureData? {
+    func removeAssociatedAddressSignature() throws -> SignatureData {
         
         if self.delegator.registryAddress == nil {
-            return nil
+            throw MetaWalletError.notReady
         }
                 
         guard let address = self.getWalletAddress() else {
-            return nil
+            throw MetaWalletError.notReady
         }
         
         let identityRegistry = self.delegator.registryAddress!.identityRegistry
@@ -527,16 +649,32 @@ public class MetaWallet: NSObject {
         
         let data = (temp + identityRegistryData! + msg! + einData + associateAddrData! + timeData).sha3(.keccak256)
         
-        guard let signature = self.getSignature(data: data) else {
-            return nil
-        }
-        
-        return signature
+        return try self.signature(data: data)
     }
     
     
 
-    private func getEin(receipt: TransactionReceipt, completion: @escaping(TransactionReceipt?) -> Void) {
+    public func getCreateKeySignature() -> SignatureData? {
+        return try? self.createKeySignature()
+    }
+    
+    
+    public func getPublicKeySignature() -> SignatureData? {
+        return try? self.publicKeySignature()
+    }
+    
+    
+    public func getRemovePublicKeySign() -> SignatureData? {
+        return try? self.removePublicKeySignature()
+    }
+    
+    
+    public func getRemoveAssociatedAddressSign() -> SignatureData? {
+        return try? self.removeAssociatedAddressSignature()
+    }
+    
+    
+    private func getEin(receipt: TransactionReceipt, completion: @escaping(TransactionReceipt?, Error?) -> Void) {
         
         let eventInputs: [ABI.Element.Event.Input] = [
             .init(name: "initiator", type: .address, indexed: true),
@@ -556,27 +694,44 @@ public class MetaWallet: NSObject {
         let einList = decodedEvents.compactMap { $0["ein"] as? BigUInt }
         guard let firstEIN = einList.first else {
             print("none_ein")
+            completion(nil, MetaWalletError.eventNotFound)
             return
         }
     
         self.metaID = self.getInt32Byte(int: firstEIN).toHexString().addHexPrefix()
         print("ein: \(self.metaID)")
         
-        guard let signatureData = self.getPublicKeySignature() else {
+        // 여기서부터 identity 는 생성되어 있으므로, 실패하면 공개키 없는 identity 가 남는다. DID 를 알려준다.
+        let signatureData: SignatureData
+        
+        do {
+            signatureData = try self.publicKeySignature()
+        } catch {
+            completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: error))
             return
         }
         
         self.delegator.addPublicKeyDelegated(signatureData: signatureData) { (type, txId, error) in
             
             if error != nil {
-                completion(nil)
+                completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: error))
                 
                 return
             }
             
+            guard let txId = txId else {
+                completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: nil))
+                return
+            }
+            
             Task {
-                await self.transactionReceipt(txId: txId!) { receipt in
-                    completion(receipt)
+                await self.transactionReceipt(txId: txId) { receipt in
+                    guard let receipt = receipt else {
+                        completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: MetaWalletError.receiptNotFound))
+                        return
+                    }
+                    
+                    completion(receipt, nil)
                 }
             }
         }
@@ -730,27 +885,60 @@ public class MetaWallet: NSObject {
      */
     public func sign(verifiable: Verifiable, nonce: String?, claim: JWT?) throws -> JWSObject? {
         
+        if let signer = self.signer {
+            return try self.sign(verifiable: verifiable, nonce: nonce, claim: claim, jwsSigner: ExternalJWSSigner(signer: signer))
+        }
+        
         guard let privateKeyData = self.privateKey else {
             return nil
+        }
+        
+        let privateKey = self.getInt32Byte(int: BigUInt(hex: privateKeyData.toHexString())!)
+        
+        return try self.signWithSigner(verifiable: verifiable, nonce: nonce, claim: claim, jwsSigner: ECDSASigner.init(privateKey: privateKey))
+    }
+    
+    
+    /**
+     * Sign verifiable credential, presentation with the given JWS signer.
+     * 외부 키 보관 서비스를 사용하는 경우 ExternalJWSSigner 등을 전달한다.
+     * kid 는 지갑의 키를 가리키므로 서명이 지갑의 공개키로 검증되지 않으면 MetaWalletError.signerMismatch 를 던진다.
+     */
+    public func sign(verifiable: Verifiable, nonce: String?, claim: JWT?, jwsSigner: JWSSigner) throws -> JWSObject? {
+        
+        guard let jws = try self.signWithSigner(verifiable: verifiable, nonce: nonce, claim: claim, jwsSigner: jwsSigner) else {
+            return nil
+        }
+        
+        guard let publicKey = self.getPublicKeyData() else {
+            throw MetaWalletError.notReady
+        }
+        
+        guard try jws.verify(verifier: ECDSAVerifier.init(publicKey: publicKey)) else {
+            throw MetaWalletError.signerMismatch
+        }
+        
+        return jws
+    }
+    
+    
+    private func signWithSigner(verifiable: Verifiable, nonce: String?, claim: JWT?, jwsSigner: JWSSigner) throws -> JWSObject? {
+        
+        // DID 가 없거나 키가 없으면 kid 를 만들 수 없다.
+        guard !self.getDid().isEmpty, let kid = self.getKid() else {
+            throw MetaWalletError.noDid
         }
         
         if let verify = verifiable as? VerifiableCredential {
             verify.issuer = self.getDid()
             
-            let privateKey = self.getInt32Byte(int: BigUInt(hex: privateKeyData.toHexString())!)
-            
-            let jwsObj = try verify.sign(kid: self.getKid()!, nonce: nonce, signer: ECDSASigner.init(privateKey: privateKey), baseClaims: claim)
-            
-            return jwsObj
+            return try verify.sign(kid: kid, nonce: nonce, signer: jwsSigner, baseClaims: claim)
         }
         
         if let verify = verifiable as? VerifiablePresentation {
             verify.holder = self.getDid()
             
-            
-            let privateKey = self.getInt32Byte(int: BigUInt(hex: privateKeyData.toHexString())!)
-            
-            return try verify.sign(kid: self.getKid()!, nonce: nonce, signer: ECDSASigner.init(privateKey: privateKey), baseClaims: claim)
+            return try verify.sign(kid: kid, nonce: nonce, signer: jwsSigner, baseClaims: claim)
         }
         
         return nil
@@ -762,6 +950,14 @@ public class MetaWallet: NSObject {
      * Issue verifiable credentail
      */
     public func issueCredential(types: [String], id: String?, nonce: String?, issuanceDate: Date?, expirationDate: Date?, ownerDid: String, subjects: [String: Any]) throws -> JWSObject? {
+        return try self.issueCredential(types: types, id: id, nonce: nonce, issuanceDate: issuanceDate, expirationDate: expirationDate, ownerDid: ownerDid, subjects: subjects, jwsSigner: nil)
+    }
+    
+    
+    /**
+     * Issue verifiable credentail with the given JWS signer
+     */
+    public func issueCredential(types: [String], id: String?, nonce: String?, issuanceDate: Date?, expirationDate: Date?, ownerDid: String, subjects: [String: Any], jwsSigner: JWSSigner?) throws -> JWSObject? {
         
         let vc = try? VerifiableCredential.init()
         vc!.addTypes(types: types)
@@ -783,6 +979,10 @@ public class MetaWallet: NSObject {
         
         vc?.credentialSubject = credentialSubject
         
+        if let jwsSigner = jwsSigner {
+            return try self.sign(verifiable: vc!, nonce: nonce, claim: nil, jwsSigner: jwsSigner)
+        }
+        
         return try self.sign(verifiable: vc!, nonce: nonce, claim: nil)
     }
     
@@ -791,6 +991,14 @@ public class MetaWallet: NSObject {
      * Issue verifiable presentation
      */
     public func issuePresentation(types: [String], id: String?, nonce: String?, issuanceDate: Date?, expirationDate: Date?, vcList: [String]) throws -> JWSObject? {
+        return try self.issuePresentation(types: types, id: id, nonce: nonce, issuanceDate: issuanceDate, expirationDate: expirationDate, vcList: vcList, jwsSigner: nil)
+    }
+    
+    
+    /**
+     * Issue verifiable presentation with the given JWS signer
+     */
+    public func issuePresentation(types: [String], id: String?, nonce: String?, issuanceDate: Date?, expirationDate: Date?, vcList: [String], jwsSigner: JWSSigner?) throws -> JWSObject? {
         let vp = try? VerifiablePresentation.init()
         vp?.addTypes(types: types)
         
@@ -811,6 +1019,10 @@ public class MetaWallet: NSObject {
         
         if expirationDate != nil {
             claims.expirationTime = expirationDate
+        }
+        
+        if let jwsSigner = jwsSigner {
+            return try self.sign(verifiable: vp!, nonce: nonce, claim: claims, jwsSigner: jwsSigner)
         }
         
         return try self.sign(verifiable: vp!, nonce: nonce, claim: claims)
