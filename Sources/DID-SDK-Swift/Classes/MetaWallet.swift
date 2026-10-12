@@ -31,7 +31,8 @@ public enum MetaWalletError: Error {
     /// 트랜잭션 receipt 를 받지 못했다.
     case receiptNotFound
     /// create_identity 트랜잭션에서 IdentityCreated 이벤트를 찾지 못했다.
-    /// 트랜잭션은 성공했으므로 identity 가 체인에 이미 생성되었을 수 있다. DID 를 알 수 없고 되돌리지 않는다. existDid 로 확인한다.
+    /// receipt 의 status 를 확인하지 않으므로 트랜잭션이 revert 된 경우에도 이 오류가 난다. identity 가 생성되었을 수도, 아닐 수도 있다.
+    /// DID 를 알 수 없고 되돌리지 않는다. existDid 로 확인할 수 있으나 조회 실패도 false 이고 DID 는 알려 주지 않는다.
     case eventNotFound
     /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
     case partialCreation(did: String, underlying: Error?)

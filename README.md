@@ -245,12 +245,13 @@ let vp = try wallet.issuePresentation(types: ["TestPresentation"], id: nil, nonc
 * 개인키가 없으므로 `toJson()` 은 `nil` 을, `getKey()?.privateKey` 는 `nil` 을 반환합니다. 외부 서명자 모드와 개인키 모드는 함께 쓸 수 없습니다. 외부 서명자를 가진 지갑의 `createDID` 는 로컬 키를 만들지 않고 서명자로 생성하며, 개인키를 가진 지갑에 `createDID(signer:)` 를 호출하면 `MetaWalletError.conflictingKeyMode` 로 끝납니다.
 * Delegator 요청은 `\x19Ethereum Signed Message:\n32` 접두를 붙인 해시(personal message)를 서명하며 v 는 27 또는 28 입니다. `MetaKeySigner` 는 SDK 가 계산한 다이제스트를 받습니다.
 * VC, VP(ES256K)는 JWS signing input 의 SHA-256 다이제스트를 서명하며 결과는 r||s (64바이트, low-s) 입니다.
-* `MetaKeySigner` 는 항상 최종 다이제스트를 받으며 추가 해시 없이 그대로 서명해야 합니다. did-sdk-java 는 이더리움 접두 없이 keccak256 다이제스트를 서명하고 이 SDK 는 접두를 붙인 personal message 해시를 서명하므로, 두 SDK 를 모두 쓰는 키 보관 서비스는 SDK 마다 다른 다이제스트를 받으며 delegator 는 둘 다 허용합니다. 근거는 meta-delegator 소스(`metaresolver/util.go` 의 `verifySignature` 가 접두 없는 서명과 접두 있는 서명을 모두 시도)이며, 외부 키 보관 서비스와 delegator 를 실제로 연동해 실행해 보지는 않았습니다.
+* `MetaKeySigner` 는 항상 최종 다이제스트를 받으며 추가 해시 없이 그대로 서명해야 합니다. did-sdk-java 는 이더리움 접두 없이 keccak256 다이제스트를 서명하고 이 SDK 는 접두를 붙인 personal message 해시를 서명하므로, 두 SDK 를 모두 쓰는 키 보관 서비스는 SDK 마다 다른 다이제스트를 받으며 delegator 는 둘 다 허용합니다. 근거는 [go-delegator 소스](https://github.com/METADIUM/go-delegator/blob/64ac5a93485556ed59872e215dc9f2602d35d7eb/metaresolver/util.go#L15-L32)(`METADIUM/go-delegator` 의 `metaresolver/util.go`, `verifySignature` 가 접두 없는 서명과 접두 있는 서명을 모두 시도)이며, 외부 키 보관 서비스와 delegator 를 실제로 연동해 실행해 보지는 않았습니다.
 * 서명이 공개키와 맞는지 확인합니다. 키 보관 서비스가 다른 키로 서명하면 검증자 단계가 아니라 서명 시점에 `MetaKeySignerError.signatureMismatch` 로 실패합니다. `jwsSigner` 를 직접 넘긴 경우에도 서명이 지갑의 공개키로 검증되지 않으면 `MetaWalletError.signerMismatch` 를 던지고, DID 가 없으면 `MetaWalletError.noDid` 를 던집니다.
 * 서명자가 던진 오류는 삼키지 않고 completion 의 `error` 로 전달됩니다. 모든 종료 경로에서 completion 이 정확히 한 번 호출됩니다. receipt 를 받지 못하면 `MetaWalletError.receiptNotFound` 입니다.
 * DID 생성은 두 트랜잭션(create_identity, 공개키 등록)입니다. 두 번째 단계가 실패하면 공개키 없는 identity 가 남으며, `MetaWalletError.partialCreation(did:underlying:)` 로 DID 와 원인을 알려줍니다. 되돌리지 않습니다.
 * r, s 가 0 이거나 곡선 위수 이상이면 `MetaKeySignerError.invalidSignature` 입니다.
-* create_identity 트랜잭션은 성공했지만 receipt 에서 `IdentityCreated` 이벤트를 찾지 못하면 `MetaWalletError.eventNotFound` 로 끝납니다. 이 오류는 identity 가 체인에 이미 생성되었을 수 있음을 뜻하며, DID 를 알 수 없고 SDK 는 되돌리지 않습니다. `existDid(completion:)` 로 지갑의 키로 identity 가 있는지 확인하십시오.
+* create_identity 트랜잭션의 receipt 에서 `IdentityCreated` 이벤트를 찾지 못하면 `MetaWalletError.eventNotFound` 로 끝납니다. SDK 는 receipt 의 status 를 확인하지 않으므로 트랜잭션이 revert 된 경우에도 이 오류가 납니다. 즉 identity 가 체인에 생성되었을 수도, 아닐 수도 있습니다. 이 오류로는 구분할 수 없고, DID 를 알 수 없으며, SDK 는 되돌리지 않습니다.
+* `existDid(completion:)` 로 지갑의 키로 identity 가 있는지 확인할 수 있지만 한계가 있습니다. 조회에 실패해도 `false` 를 돌려주므로 "없음"과 "조회 실패"를 구분하지 못하고(실패하면 다시 시도하십시오), identity 가 있어도 DID 는 알려 주지 않습니다.
 
 ### Verifiable Credential
 
