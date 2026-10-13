@@ -86,6 +86,7 @@ web3swift 3.x 는 Xcode 27 SDK 로 빌드되지 않습니다 (`URLResponse` 에 
   .package(url: "https://github.com/METADIUM/web3swift.git", exact: "3.3.2-metadium.1")
   ```
 
+* **태그 보호:** 포크의 ruleset 이 `*-metadium.*` 태그의 수정과 삭제를 막고, 생성은 릴리스 팀(`web3swift-release`)만 할 수 있습니다. 릴리스 브랜치 `metadium/release` 는 force push 와 삭제가 막혀 있고 PR 승인이 필요합니다. 조직 관리자는 규칙 자체를 바꿀 수 있으므로 아래 확인 방법도 함께 쓰십시오.
 * **태그가 가리키는 코드 확인:** 태그 `3.3.2-metadium.1` 은 커밋 `6a1a8c69566c4496e27b436b33adece760e37d9d` 를 가리킵니다. 받은 코드가 같은지 확인하려면:
 
   ```bash
