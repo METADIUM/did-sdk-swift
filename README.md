@@ -71,9 +71,33 @@ The [Swift_Package_Manager](https://github.com/METADIUM/did-sdk-swift.git/ "")
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "1.1.0"))
+    .package(url: "https://github.com/METADIUM/did-sdk-swift.git", .upToNextMajor(from: "2.0.0"))
 ]
 ```
+
+### 1.x 에서 2.0.0 으로 올리기
+
+2.0.0 은 **메이저 버전**입니다. 이 패키지가 상류 web3swift 대신 METADIUM 의 web3swift 포크에 의존하게 되었기 때문입니다([아래 설명](#빌드-xcode-27)). `.upToNextMajor(from: "1.1.0")` 을 쓰는 앱은 2.0.0 으로 자동으로 올라가지 않으며, 올리려면 `from: "2.0.0"` 으로 바꾸십시오.
+
+* **상류 web3swift 를 직접 의존하는 앱은 의존성이 풀리지 않습니다.** SwiftPM 에게 두 URL 은 같은 패키지(`web3swift`)라서 이렇게 실패합니다(SwiftPM 5.10, 6.0 에서 확인).
+
+  ```
+  error: Dependencies could not be resolved because root depends on 'web3swift' 3.3.0..<4.0.0 and 'did-sdk-swift' depends on 'web3swift' 3.3.2-metadium.1.
+  ```
+
+  앱의 web3swift 의존성도 **같은 포크, 같은 태그**로 바꾸십시오.
+
+  ```swift
+  .package(url: "https://github.com/METADIUM/web3swift.git", exact: "3.3.2-metadium.1")
+  ```
+
+* **동작 변경** (잘못된 동작을 바로잡은 것입니다):
+  * revert 된 트랜잭션이 오류 없이 `status == .failed` 인 receipt 로 돌아오던 것이 이제 오류입니다(`MetaWalletError.transactionFailed(txId:)`. DID 생성의 공개키 등록 단계는 `partialCreation(did:underlying:)`).
+  * `deleteDID` 는 공개키 삭제에 이어 associated address 도 삭제하므로 **트랜잭션이 2개**입니다(did-sdk-java 의 `deleteDid` 와 같음). 이전에는 associated address 가 체인에 남았습니다. 첫 트랜잭션을 보내기 전에 DID 를 확인하고(`noDid`, `didDoesNotMatchKey`, `notReady`), 두 번째 단계가 실패하면 `partialDeletion(did:underlying:)` 입니다. 1.x 로 삭제한 DID 의 남은 associated address 는 정리되지 않습니다.
+  * receipt 를 받지 못하면 `transactionUnconfirmed(txId:)` 이고, 최신 블록 시각을 읽지 못해도 서명 단계가 멈추지 않고 `notReady` 로 끝납니다.
+  * `jwsSigner` 로 서명할 때 DID 가 없으면 `noDid`, 서명이 지갑의 키와 맞지 않으면 `signerMismatch` 입니다(이전에는 크래시하거나 다른 키로 서명한 VC 가 만들어졌습니다).
+* **새 기능:** 외부 키 보관 서비스 지원 ([외부 키 보관 서비스](#외부-키-보관-서비스)). did-sdk-java 0.4.0 과 같은 서명 규격을 씁니다.
+* **CocoaPods** 는 포크의 영향을 받지 않습니다. Xcode 27 에서는 아직 지원되지 않습니다([#8](https://github.com/METADIUM/did-sdk-swift/issues/8)).
 
 ### 빌드 (Xcode 27)
 
