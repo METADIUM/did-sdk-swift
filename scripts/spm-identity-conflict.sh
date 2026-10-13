@@ -66,4 +66,4 @@ PY
   fi
 done
 echo
-echo "A resolves = a warning/pick (check the log); A fails = apps that depend on upstream web3swift directly break on 1.2.0 (needs 2.0.0)."
+echo "A fails = an app that depends on the upstream web3swift directly does not resolve with did-sdk-swift (it has to point to the fork, case B). A resolves = only a warning: check resolve.log."
