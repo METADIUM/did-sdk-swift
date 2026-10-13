@@ -266,4 +266,18 @@ final class ExternalSignerTests: XCTestCase {
         wait(for: [done], timeout: 5)
         XCTAssertNotNil(wallet.getKey()?.privateKey)   // 개인키를 지우지 않는다
     }
+
+    // MARK: - EIN of a DID
+
+    func testEinFromDid() {
+        // testnet 의 DID. 테스트넷 실행에서 BigUInt(String) 이 "0x..." 를 읽지 못해 크래시했다.
+        XCTAssertEqual(MetaWallet.ein(fromDid: "did:meta:testnet:0000000000000000000000000000000000000000000000000000000000074125", prefix: "did:meta:testnet:"), BigUInt(0x74125))
+        XCTAssertEqual(MetaWallet.ein(fromDid: "did:meta:0000000000000000000000000000000000000000000000000000000000000332", prefix: "did:meta:"), BigUInt(0x332))
+
+        // 값이 없거나 형식이 맞지 않으면 크래시하지 않고 nil
+        XCTAssertNil(MetaWallet.ein(fromDid: "", prefix: "did:meta:testnet:"))
+        XCTAssertNil(MetaWallet.ein(fromDid: "did:meta:testnet:", prefix: "did:meta:testnet:"))
+        XCTAssertNil(MetaWallet.ein(fromDid: "did:other:0000000000000000000000000000000000000000000000000000000000000332", prefix: "did:meta:"))
+        XCTAssertNil(MetaWallet.ein(fromDid: "did:meta:testnet:zz", prefix: "did:meta:testnet:"))
+    }
 }

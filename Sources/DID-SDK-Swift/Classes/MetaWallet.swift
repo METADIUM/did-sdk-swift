@@ -671,24 +671,48 @@ public class MetaWallet: NSObject {
             throw MetaWalletError.notReady
         }
         
-        let identityRegistry = self.delegator.registryAddress!.identityRegistry
-       
+        // 강제 언래핑을 쓰지 않는다. 값이 없으면 크래시 대신 오류로 끝난다.
+        guard let identityRegistry = self.delegator.registryAddress?.identityRegistry,
+              let identityRegistryData = Data.fromHex(identityRegistry),
+              let msg = KDefine.kRemove_Address_MyIdentity.data(using: .utf8),
+              let associateAddrData = Data.fromHex(address) else {
+            throw MetaWalletError.notReady
+        }
+        
+        guard let ein = MetaWallet.ein(fromDid: self.getDid(), prefix: self.delegator.didPrefix) else {
+            throw MetaWalletError.noDid
+        }
+        
         let temp = Data([0x19, 0x00])
-        let msg = KDefine.kRemove_Address_MyIdentity.data(using: .utf8)
-        let identityRegistryData = Data.fromHex(identityRegistry!)
         
         let timeStamp = try self.lastBlockTimeStamp()
         
-        let associateAddrData = Data.fromHex(address)
-        
         let timeData = self.getInt32Byte(int: BigUInt(timeStamp))
         
-        let ein = self.getDid().replacingOccurrences(of: self.delegator.didPrefix, with: "").addHexPrefix()
-        let einData = self.getInt32Byte(int: BigUInt(ein)!)
+        let einData = self.getInt32Byte(int: ein)
         
-        let data = (temp + identityRegistryData! + msg! + einData + associateAddrData! + timeData).sha3(.keccak256)
+        let data = (temp + identityRegistryData + msg + einData + associateAddrData + timeData).sha3(.keccak256)
         
         return try self.signature(data: data)
+    }
+    
+    
+    /**
+     * DID 끝의 EIN(16진수)을 숫자로 바꾼다. prefix 로 시작하지 않거나 EIN 이 없거나 16진수가 아니면 nil.
+     * BigUInt(String) 은 10진수로 읽으므로 "0x..." 문자열에 쓰면 nil 이 된다. 16진수는 BigUInt(hex:) 를 쓴다.
+     */
+    static func ein(fromDid did: String, prefix: String) -> BigUInt? {
+        guard did.hasPrefix(prefix) else {
+            return nil
+        }
+        
+        let hex = String(did.dropFirst(prefix.count))
+        
+        guard !hex.isEmpty else {
+            return nil
+        }
+        
+        return BigUInt(hex: hex)
     }
     
     
