@@ -75,6 +75,25 @@ dependencies: [
 ]
 ```
 
+### 빌드 (Xcode 27)
+
+web3swift 3.x 는 Xcode 27 SDK 로 빌드되지 않습니다 (`URLResponse` 에 `statusCode` 가 없음. [web3swift#916](https://github.com/web3swift-team/web3swift/issues/916), 수정 PR [#910](https://github.com/web3swift-team/web3swift/pull/910) 은 아직 머지되지 않음). 그래서 이 패키지는 상류 대신 **METADIUM 의 web3swift 포크**(`3.3.2-metadium.1`: 3.3.2 에 #910 의 수정 하나만 더한 것)에 의존합니다. 상류가 수정을 릴리스하면 상류로 되돌립니다. [포크](https://github.com/METADIUM/web3swift)
+
+* **Swift Package Manager:** 별도 설정이 필요 없습니다. 앱이 상류 web3swift 를 **직접** 의존하면 같은 패키지 이름이라 의존성이 충돌할 수 있습니다. 그 경우 앱도 같은 포크를 가리키게 하십시오.
+* **CocoaPods:** podspec 은 CocoaPods 의 `web3swift` pod 에 의존하므로 이 포크의 영향을 받지 않습니다. 포크에는 podspec 이 없어서 Xcode 27 에서 CocoaPods 로 빌드하는 방법은 확인하지 못했습니다.
+* **이 저장소를 직접 빌드·테스트할 때:** 저장소 루트에 CocoaPods 용 `_Pods.xcodeproj` 링크가 있어서 `xcodebuild` 가 패키지 대신 Pods 프로젝트를 고릅니다. 패키지만 담은 깨끗한 복사본에서 빌드하십시오.
+
+```bash
+rm -rf /tmp/did-pkg && mkdir /tmp/did-pkg
+git archive HEAD Package.swift Sources Tests | tar -x -C /tmp/did-pkg
+cd /tmp/did-pkg
+xcodebuild test -scheme DID-SDK-Swift \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:did-sdk-swiftTests/ExternalSignerTests
+```
+
+기존 `did_sdk_swiftTests` 는 테스트넷 delegator 를 호출하므로 위처럼 `-only-testing` 으로 분리해서 실행하십시오.
+
 
 
 
