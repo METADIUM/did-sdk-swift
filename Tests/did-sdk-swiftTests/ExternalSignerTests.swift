@@ -280,4 +280,28 @@ final class ExternalSignerTests: XCTestCase {
         XCTAssertNil(MetaWallet.ein(fromDid: "did:other:0000000000000000000000000000000000000000000000000000000000000332", prefix: "did:meta:"))
         XCTAssertNil(MetaWallet.ein(fromDid: "did:meta:testnet:zz", prefix: "did:meta:testnet:"))
     }
+
+    // MARK: - deleteDID checks the DID before the first transaction
+
+    func testDeleteDidWithoutDidEndsBeforeSendingAnything() throws {
+        let delegator = MetaDelegator(delegatorUrl: "https://testdelegator.metadium.com",
+                                      nodeUrl: "https://api.metadium.com/dev",
+                                      resolverUrl: "https://testnetresolver.metadium.com/1.0/identifiers/",
+                                      didPrefix: "did:meta:testnet:",
+                                      api_key: "")
+        let signer = LocalKeyStore(privateKey: Web3Core.SECP256K1.generatePrivateKey()!, mode: 0)
+        let wallet = try MetaWallet(delegator: delegator, signer: signer)   // DID 없음
+        let done = expectation(description: "deleteDID")
+
+        // DID 가 비어 있으면 공개키 삭제(첫 트랜잭션)를 보내기 전에 noDid 로 끝난다. 이전에는 공개키만 삭제된 채 partialDeletion 이었다.
+        wallet.deleteDID { receipt, error in
+            XCTAssertNil(receipt)
+            guard case MetaWalletError.noDid? = error else {
+                return XCTFail("\(String(describing: error))")
+            }
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 10)
+    }
 }

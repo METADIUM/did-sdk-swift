@@ -39,6 +39,8 @@ public enum MetaWalletError: Error {
     case transactionFailed(txId: String)
     /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
     case partialCreation(did: String, underlying: Error?)
+    /// DID 의 EIN 이 지갑 키에 연결된 EIN(IdentityRegistry.getEIN)과 다르다. 아무 트랜잭션도 보내지 않았다.
+    case didDoesNotMatchKey(did: String)
     /// 공개키는 삭제되었지만 associated address 제거가 끝나지 않았다. 되돌리지 않는다.
     /// associated address 는 체인에 남아 있을 수 있다. underlying 이 transactionUnconfirmed 이면 제거되었는지 알 수 없다(txId 로 확인한다).
     case partialDeletion(did: String, underlying: Error?)
@@ -361,6 +363,25 @@ public class MetaWallet: NSObject {
     
     public func deleteDID(completion: @escaping (TransactionReceipt?, Error?) -> Void) async {
         self.tryReceiptCount = 0
+        
+        // 첫 트랜잭션(공개키 삭제)을 보내기 전에 DID 를 확인한다. 두 번째 단계는 DID 의 EIN 이 필요해서,
+        // DID 가 비었거나 지갑 키와 맞지 않으면 이 확인이 없을 때 공개키만 삭제된 채 끝난다.
+        guard let ein = MetaWallet.ein(fromDid: self.getDid(), prefix: self.delegator.didPrefix) else {
+            completion(nil, MetaWalletError.noDid)
+            return
+        }
+        
+        // 지갑 키에 연결된 EIN 과 같은지 체인에서 읽어 확인한다.
+        // 읽지 못하면(키에 identity 가 없음, 노드 오류) 아무것도 보내지 않고 notReady 로 끝난다.
+        guard let onChainEin = await self.einOfWalletKey() else {
+            completion(nil, MetaWalletError.notReady)
+            return
+        }
+        
+        guard onChainEin == ein else {
+            completion(nil, MetaWalletError.didDoesNotMatchKey(did: self.getDid()))
+            return
+        }
         
         let signatureData: SignatureData
         
@@ -804,6 +825,39 @@ public class MetaWallet: NSObject {
                 }
             }
         }
+    }
+    
+    
+    /**
+     * 지갑 키(주소)에 연결된 EIN 을 IdentityRegistry 의 getEIN 으로 읽는다. 읽지 못하면 nil.
+     * (키에 identity 가 없으면 컨트랙트가 revert 한다. 공개키만 삭제되고 associated address 가 남은 identity 는 읽을 수 있다.)
+     */
+    private func einOfWalletKey() async -> BigUInt? {
+        guard let address = self.getWalletAddress(),
+              let identity = self.delegator.registryAddress?.identityRegistry,
+              let identityAddress = EthereumAddress(identity) else {
+            return nil
+        }
+        
+        let abiString = """
+            [{
+                  "constant": true,
+                  "inputs": [{"name": "_address", "type": "address"}],
+                  "name": "getEIN",
+                  "outputs": [{"name": "ein", "type": "uint256"}],
+                  "payable": false,
+                  "stateMutability": "view",
+                  "type": "function"
+            }]
+            """
+        
+        guard let contract = self.delegator.node.contract(abiString, at: identityAddress),
+              let readOperation = contract.createReadOperation("getEIN", parameters: [address]),
+              let readed = try? await readOperation.callContractMethod() else {
+            return nil
+        }
+        
+        return readed.values.first as? BigUInt
     }
     
     
