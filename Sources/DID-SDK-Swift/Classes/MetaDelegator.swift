@@ -111,13 +111,28 @@ public class MetaDelegator: NSObject {
     
     public func getLastBlockTimeStamp(completion: @escaping(Int) -> Void)  {
         
+        // 기존 동작 유지: 블록을 가져오지 못하면 completion 을 호출하지 않는다.
+        self.fetchLastBlockTimeStamp { timestamp in
+            if let timestamp = timestamp {
+                completion(timestamp)
+            }
+        }
+    }
+    
+    
+    /**
+     * get time stamp. 항상 completion 을 호출한다. 블록을 가져오지 못하면 nil.
+     * 서명 함수가 기다리다 멈추지 않게 하려고 사용한다.
+     */
+    func fetchLastBlockTimeStamp(completion: @escaping(Int?) -> Void) {
+        
         Task {
-            var timestamp: Int = 0
             guard let lastBlock = try? await self.node.eth.block(by: .latest) else {
+                completion(nil)
                 return
             }
             
-            timestamp = Int(lastBlock.timestamp.timeIntervalSince1970)
+            let timestamp = Int(lastBlock.timestamp.timeIntervalSince1970)
             self.timeStamp = timestamp
             
             completion(timestamp)
@@ -261,7 +276,7 @@ public class MetaDelegator: NSObject {
         self.getAllServiceAddress()
         
         guard let addr = self.getAddress() else {
-            return
+            return complection(.removeAssociatedAddress, nil, MetaWalletError.notReady)
         }
         
         let params = [["address_to_remove": addr, "v": signatureData.v, "r": signatureData.r, "s": signatureData.s, "timestamp": self.timeStamp!]]
@@ -276,6 +291,9 @@ public class MetaDelegator: NSObject {
                 
                 return complection(.removeAssociatedAddress, txId, error)
             }
+            
+            // 오류도 txId 도 없는 응답. completion 이 호출되지 않으면 호출자가 계속 기다린다.
+            complection(.removeAssociatedAddress, nil, MetaWalletError.notReady)
         }
     }
     
