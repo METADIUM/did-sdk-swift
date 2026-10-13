@@ -145,7 +145,8 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 #### Delete DID
 DID를 삭제합니다. did-sdk-java 의 `deleteDid` 와 같이 두 트랜잭션입니다. 공개키를 삭제한 뒤 associated address 를 삭제합니다.
  
-* 두 번째 단계가 실패하면 공개키는 이미 삭제된 상태입니다. `MetaWalletError.partialDeletion(did:underlying:)` 로 알려 주며, 되돌리지 않습니다. associated address 는 체인에 남아 있을 수 있습니다. `underlying` 이 `transactionUnconfirmed(txId:)` 이면 제거되었는지 알 수 없으므로 `txId` 로 확인하십시오.
+* 첫 트랜잭션을 보내기 전에 DID 를 확인합니다. DID 가 비어 있으면 `MetaWalletError.noDid`, DID 의 EIN 이 지갑 키에 연결된 EIN(`getEIN`)과 다르면 `MetaWalletError.didDoesNotMatchKey` 로 끝나며 아무 트랜잭션도 보내지 않습니다. 지갑 키에 연결된 identity 를 읽지 못하면(이미 삭제되었거나 노드 오류) `notReady` 입니다.
+* 두 번째 단계가 실패하면 공개키는 이미 삭제된 상태입니다. `MetaWalletError.partialDeletion(did:underlying:)` 로 알려 주며, 되돌리지 않습니다. associated address 는 체인에 남아 있을 수 있습니다. `underlying` 이 `transactionUnconfirmed(txId:)` 이면 제거되었는지 알 수 없으므로 `txId` 로 확인하십시오. `partialDeletion` 뒤에 `deleteDID` 를 다시 호출하면 남은 associated address 를 지울 수 있을 것으로 보입니다(delegator 는 공개키가 있는지 검사하지 않고, 지갑 키의 `getEIN` 은 associated address 가 남아 있으면 읽힙니다). 테스트넷에서 확인하지는 않았습니다.
 * 최신 블록 시각을 가져오지 못하면(노드 오류) 서명 단계가 멈추지 않고 `MetaWalletError.notReady` 로 끝납니다. 두 번째 단계에서 그러면 `partialDeletion` 입니다.
 * 이전 버전은 첫 번째 단계(공개키 삭제)만 수행하고 끝났습니다. 그 버전으로 삭제한 DID 는 associated address 가 체인에 남아 있습니다.
 * `receipt` 는 두 번째 트랜잭션의 것입니다.
