@@ -79,7 +79,21 @@ dependencies: [
 
 web3swift 3.x 는 Xcode 27 SDK 로 빌드되지 않습니다 (`URLResponse` 에 `statusCode` 가 없음. [web3swift#916](https://github.com/web3swift-team/web3swift/issues/916), 수정 PR [#910](https://github.com/web3swift-team/web3swift/pull/910) 은 아직 머지되지 않음). 그래서 이 패키지는 상류 대신 **METADIUM 의 web3swift 포크**(`3.3.2-metadium.1`: 3.3.2 에 #910 의 수정 하나만 더한 것)에 의존합니다. 상류가 수정을 릴리스하면 상류로 되돌립니다. [포크](https://github.com/METADIUM/web3swift)
 
-* **Swift Package Manager:** 별도 설정이 필요 없습니다. 앱이 상류 web3swift 를 **직접** 의존하면 같은 패키지 이름이라 의존성이 충돌할 수 있습니다. 그 경우 앱도 같은 포크를 가리키게 하십시오.
+* **Swift Package Manager:** 별도 설정이 필요 없습니다. 앱이 상류 web3swift 를 **직접** 의존하면 같은 패키지 이름(`web3swift`)이라 SwiftPM 이 의존성을 풀지 못합니다. 그 경우 앱의 의존성도 **같은 포크, 같은 태그**로 바꾸십시오.
+
+  ```swift
+  // 앱의 Package.swift (상류 web3swift 대신)
+  .package(url: "https://github.com/METADIUM/web3swift.git", exact: "3.3.2-metadium.1")
+  ```
+
+* **태그가 가리키는 코드 확인:** 태그 `3.3.2-metadium.1` 은 커밋 `6a1a8c69566c4496e27b436b33adece760e37d9d` 를 가리킵니다. 받은 코드가 같은지 확인하려면:
+
+  ```bash
+  git ls-remote --tags https://github.com/METADIUM/web3swift.git '3.3.2-metadium.1^{}'
+  # 6a1a8c69566c4496e27b436b33adece760e37d9d  refs/tags/3.3.2-metadium.1^{}
+  ```
+
+  앱은 `Package.resolved` 를 커밋해 두십시오. SwiftPM 은 태그가 다른 커밋으로 바뀌면 이를 감지할 수 있고(fingerprint 검사, `swift package --resolver-fingerprint-checking strict`), 바뀌었다면 받지 말고 알려 주십시오.
 * **CocoaPods:** podspec 은 CocoaPods 의 `web3swift` pod 에 의존하므로 이 포크의 영향을 받지 않습니다. 포크에는 podspec 이 없어서 Xcode 27 에서 CocoaPods 로 빌드하는 방법은 확인하지 못했습니다.
 * **이 저장소를 직접 빌드·테스트할 때:** 저장소 루트에 CocoaPods 용 `_Pods.xcodeproj` 링크가 있어서 `xcodebuild` 가 패키지 대신 Pods 프로젝트를 고릅니다. 패키지만 담은 깨끗한 복사본에서 빌드하십시오.
 
