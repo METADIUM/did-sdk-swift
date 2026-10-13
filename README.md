@@ -149,6 +149,7 @@ DID를 삭제합니다. did-sdk-java 의 `deleteDid` 와 같이 두 트랜잭션
 * 최신 블록 시각을 가져오지 못하면(노드 오류) 서명 단계가 멈추지 않고 `MetaWalletError.notReady` 로 끝납니다. 두 번째 단계에서 그러면 `partialDeletion` 입니다.
 * 이전 버전은 첫 번째 단계(공개키 삭제)만 수행하고 끝났습니다. 그 버전으로 삭제한 DID 는 associated address 가 체인에 남아 있습니다.
 * `receipt` 는 두 번째 트랜잭션의 것입니다.
+* 삭제가 끝나도 identity(EIN)는 체인에 남고, 공개키와 associated address 만 없어집니다. 테스트넷에서 확인한 상태는 `identityExists` true, `associatedAddresses` 빈 목록이며, 지갑의 키로 조회하는 `existDid` 는 false 입니다. did-sdk-java 의 `deleteDid` 도 같습니다.
  
 ```Swift
     wallet.deleteDID { receipt, error in
