@@ -261,7 +261,7 @@ public class MetaDelegator: NSObject {
         self.getAllServiceAddress()
         
         guard let addr = self.getAddress() else {
-            return
+            return complection(.removeAssociatedAddress, nil, MetaWalletError.notReady)
         }
         
         let params = [["address_to_remove": addr, "v": signatureData.v, "r": signatureData.r, "s": signatureData.s, "timestamp": self.timeStamp!]]
@@ -276,6 +276,9 @@ public class MetaDelegator: NSObject {
                 
                 return complection(.removeAssociatedAddress, txId, error)
             }
+            
+            // 오류도 txId 도 없는 응답. completion 이 호출되지 않으면 호출자가 계속 기다린다.
+            complection(.removeAssociatedAddress, nil, MetaWalletError.notReady)
         }
     }
     

@@ -143,7 +143,11 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 ```
 
 #### Delete DID
-DID를 삭제합니다.
+DID를 삭제합니다. did-sdk-java 의 `deleteDid` 와 같이 두 트랜잭션입니다. 공개키를 삭제한 뒤 associated address 를 삭제합니다.
+ 
+* 두 번째 단계가 실패하면 공개키는 이미 삭제된 상태입니다. `MetaWalletError.partialDeletion(did:underlying:)` 로 알려 주며, 되돌리지 않습니다.
+* 이전 버전은 첫 번째 단계(공개키 삭제)만 수행하고 끝났습니다. 그 버전으로 삭제한 DID 는 associated address 가 체인에 남아 있습니다.
+* `receipt` 는 두 번째 트랜잭션의 것입니다.
  
 ```Swift
     wallet.deleteDID { receipt, error in

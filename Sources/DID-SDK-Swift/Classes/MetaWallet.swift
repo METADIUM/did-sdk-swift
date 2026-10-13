@@ -38,6 +38,8 @@ public enum MetaWalletError: Error {
     case transactionFailed(txId: String)
     /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
     case partialCreation(did: String, underlying: Error?)
+    /// 공개키는 삭제되었지만 associated address 제거가 끝나지 않았다. associated address 가 체인에 남아 있다. 되돌리지 않는다.
+    case partialDeletion(did: String, underlying: Error?)
 }
 
 public enum verifyError: Error {
@@ -398,7 +400,9 @@ public class MetaWallet: NSObject {
                             return
                         }
                         
-                        completion(receipt, nil)
+                        // did-sdk-java 의 deleteDid 와 같이 공개키를 삭제한 뒤 associated address 도 삭제한다.
+                        // 여기서부터 실패하면 공개키만 삭제된 상태가 된다.
+                        self.removeAssociatedAddress(completion: completion)
                     }
                 }
             }
@@ -407,14 +411,31 @@ public class MetaWallet: NSObject {
     }
     
     
-    private func removeAssociated() {
-        guard let signData = self.getRemoveAssociatedAddressSign() else {
+    /**
+     * deleteDID 의 두 번째 단계. associated address 를 제거한다.
+     * 실패하면 공개키는 이미 삭제된 상태이므로 MetaWalletError.partialDeletion 으로 알린다.
+     */
+    private func removeAssociatedAddress(completion: @escaping (TransactionReceipt?, Error?) -> Void) {
+        self.tryReceiptCount = 0
+        
+        let signatureData: SignatureData
+        
+        do {
+            signatureData = try self.removeAssociatedAddressSignature()
+        } catch {
+            completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: error))
             return
         }
         
-        self.delegator.removeAssociatedAddressDelegated(signatureData: signData) { (type, txID, error) in
+        self.delegator.removeAssociatedAddressDelegated(signatureData: signatureData) { (type, txID, error) in
             
             if error != nil {
+                completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: error))
+                return
+            }
+            
+            guard let txID = txID else {
+                completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: nil))
                 return
             }
 
@@ -422,8 +443,19 @@ public class MetaWallet: NSObject {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 Task {
-                    await self.transactionReceipt(txId: txID!) { receipt in
+                    await self.transactionReceipt(txId: txID) { receipt in
                         
+                        guard let receipt = receipt else {
+                            completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: MetaWalletError.receiptNotFound))
+                            return
+                        }
+                        
+                        if receipt.status == .failed {
+                            completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: MetaWalletError.transactionFailed(txId: txID)))
+                            return
+                        }
+                        
+                        completion(receipt, nil)
                     }
                 }
             }
@@ -649,11 +681,17 @@ public class MetaWallet: NSObject {
         
         var timeStamp: Int = 0
         
-        DispatchQueue.global().sync {
-            self.delegator.getLastBlockTimeStamp(completion: { timestamp in
-                timeStamp = timestamp
-            })
-        }
+        let semaPhore = DispatchSemaphore(value: 0)
+        
+        // getLastBlockTimeStamp 는 비동기이므로 다른 서명 함수와 같이 완료를 기다린다.
+        // (이전에는 기다리지 않아 timestamp 0 으로 서명했다.)
+        self.delegator.getLastBlockTimeStamp(completion: { timestamp in
+            timeStamp = timestamp
+            
+            semaPhore.signal()
+        })
+        
+        semaPhore.wait()
         
         let associateAddrData = Data.fromHex(address)
         
