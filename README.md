@@ -250,7 +250,8 @@ let vp = try wallet.issuePresentation(types: ["TestPresentation"], id: nil, nonc
 * 서명자가 던진 오류는 삼키지 않고 completion 의 `error` 로 전달됩니다. 모든 종료 경로에서 completion 이 정확히 한 번 호출됩니다. receipt 를 받지 못하면 `MetaWalletError.receiptNotFound` 입니다.
 * DID 생성은 두 트랜잭션(create_identity, 공개키 등록)입니다. 두 번째 단계가 실패하면 공개키 없는 identity 가 남으며, `MetaWalletError.partialCreation(did:underlying:)` 로 DID 와 원인을 알려줍니다. 되돌리지 않습니다.
 * r, s 가 0 이거나 곡선 위수 이상이면 `MetaKeySignerError.invalidSignature` 입니다.
-* create_identity 트랜잭션의 receipt 에서 `IdentityCreated` 이벤트를 찾지 못하면 `MetaWalletError.eventNotFound` 로 끝납니다. SDK 는 receipt 의 status 를 확인하지 않으므로 트랜잭션이 revert 된 경우에도 이 오류가 납니다. 즉 identity 가 체인에 생성되었을 수도, 아닐 수도 있습니다. 이 오류로는 구분할 수 없고, DID 를 알 수 없으며, SDK 는 되돌리지 않습니다.
+* 트랜잭션이 revert 되면(receipt 의 status 가 failed) `MetaWalletError.transactionFailed(txId:)` 로 끝납니다. 해당 트랜잭션의 변경은 체인에 반영되지 않았습니다. 이전 버전은 revert 된 receipt 를 오류 없이 그대로 돌려주었습니다. DID 생성의 두 번째 단계(공개키 등록)가 revert 되면 `partialCreation(did:underlying:)` 의 `underlying` 으로 전달됩니다.
+* create_identity 트랜잭션은 성공했지만 receipt 에서 `IdentityCreated` 이벤트를 찾지 못하면 `MetaWalletError.eventNotFound` 로 끝납니다. identity 가 체인에 생성되었을 가능성이 크지만 DID 를 알 수 없고, SDK 는 되돌리지 않습니다.
 * `existDid(completion:)` 로 지갑의 키로 identity 가 있는지 확인할 수 있지만 한계가 있습니다. 조회에 실패해도 `false` 를 돌려주므로 "없음"과 "조회 실패"를 구분하지 못하고(실패하면 다시 시도하십시오), identity 가 있어도 DID 는 알려 주지 않습니다.
 
 ### Verifiable Credential
