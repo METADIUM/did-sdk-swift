@@ -111,13 +111,28 @@ public class MetaDelegator: NSObject {
     
     public func getLastBlockTimeStamp(completion: @escaping(Int) -> Void)  {
         
+        // 기존 동작 유지: 블록을 가져오지 못하면 completion 을 호출하지 않는다.
+        self.fetchLastBlockTimeStamp { timestamp in
+            if let timestamp = timestamp {
+                completion(timestamp)
+            }
+        }
+    }
+    
+    
+    /**
+     * get time stamp. 항상 completion 을 호출한다. 블록을 가져오지 못하면 nil.
+     * 서명 함수가 기다리다 멈추지 않게 하려고 사용한다.
+     */
+    func fetchLastBlockTimeStamp(completion: @escaping(Int?) -> Void) {
+        
         Task {
-            var timestamp: Int = 0
             guard let lastBlock = try? await self.node.eth.block(by: .latest) else {
+                completion(nil)
                 return
             }
             
-            timestamp = Int(lastBlock.timestamp.timeIntervalSince1970)
+            let timestamp = Int(lastBlock.timestamp.timeIntervalSince1970)
             self.timeStamp = timestamp
             
             completion(timestamp)

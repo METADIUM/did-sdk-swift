@@ -28,8 +28,9 @@ public enum MetaWalletError: Error {
     case signerMismatch
     /// 개인키를 가진 지갑에 외부 서명자로 DID 를 생성하려 했다. 개인키 모드와 외부 서명자 모드는 함께 쓸 수 없다.
     case conflictingKeyMode
-    /// 트랜잭션 receipt 를 받지 못했다.
-    case receiptNotFound
+    /// 트랜잭션은 제출되었지만 receipt 를 받지 못했다(타임아웃). 나중에 블록에 들어갈 수 있어 결과를 알 수 없다.
+    /// txId 로 노드에서 확인한다.
+    case transactionUnconfirmed(txId: String)
     /// create_identity 트랜잭션은 성공했지만(status ok) receipt 에서 IdentityCreated 이벤트를 찾지 못했다.
     /// identity 는 체인에 생성되었을 가능성이 크다. DID 를 알 수 없고 되돌리지 않는다.
     /// existDid 로 확인할 수 있으나 조회 실패도 false 이고 DID 는 알려 주지 않는다.
@@ -38,7 +39,8 @@ public enum MetaWalletError: Error {
     case transactionFailed(txId: String)
     /// DID(identity)는 생성됐지만 공개키 등록이 끝나지 않았다.
     case partialCreation(did: String, underlying: Error?)
-    /// 공개키는 삭제되었지만 associated address 제거가 끝나지 않았다. associated address 가 체인에 남아 있다. 되돌리지 않는다.
+    /// 공개키는 삭제되었지만 associated address 제거가 끝나지 않았다. 되돌리지 않는다.
+    /// associated address 는 체인에 남아 있을 수 있다. underlying 이 transactionUnconfirmed 이면 제거되었는지 알 수 없다(txId 로 확인한다).
     case partialDeletion(did: String, underlying: Error?)
 }
 
@@ -306,7 +308,7 @@ public class MetaWallet: NSObject {
                 self.transationType = type
                 await self.transactionReceipt(txId: txID) { receipt in
                     guard let receipt = receipt else {
-                        completion(nil, MetaWalletError.receiptNotFound)
+                        completion(nil, MetaWalletError.transactionUnconfirmed(txId: txID))
                         return
                     }
                     
@@ -389,7 +391,7 @@ public class MetaWallet: NSObject {
                     await self.transactionReceipt(txId: txID) { receipt in
                         
                         guard let receipt = receipt else {
-                            completion(nil, MetaWalletError.receiptNotFound)
+                            completion(nil, MetaWalletError.transactionUnconfirmed(txId: txID))
                             return
                         }
                         
@@ -446,7 +448,7 @@ public class MetaWallet: NSObject {
                     await self.transactionReceipt(txId: txID) { receipt in
                         
                         guard let receipt = receipt else {
-                            completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: MetaWalletError.receiptNotFound))
+                            completion(nil, MetaWalletError.partialDeletion(did: self.getDid(), underlying: MetaWalletError.transactionUnconfirmed(txId: txID)))
                             return
                         }
                         
@@ -516,6 +518,32 @@ public class MetaWallet: NSObject {
     
     
     /**
+     * 서명 함수가 쓰는 최신 블록 시각.
+     * 블록을 가져오지 못하면 MetaWalletError.notReady 를 던진다. 기다리다 멈추지 않는다(completion 이 오지 않아도 30초 뒤 던진다).
+     */
+    private func lastBlockTimeStamp() throws -> Int {
+        var result: Int?
+        let semaPhore = DispatchSemaphore(value: 0)
+        
+        self.delegator.fetchLastBlockTimeStamp(completion: { timestamp in
+            result = timestamp
+            
+            semaPhore.signal()
+        })
+        
+        if semaPhore.wait(timeout: .now() + 30) == .timedOut {
+            throw MetaWalletError.notReady
+        }
+        
+        guard let timestamp = result else {
+            throw MetaWalletError.notReady
+        }
+        
+        return timestamp
+    }
+    
+    
+    /**
      * create_identity delegate sign
      */
     func createKeySignature() throws -> SignatureData {
@@ -558,17 +586,7 @@ public class MetaWallet: NSObject {
         let resolData = resolverData as Data
         let proviData = providerData as Data
         
-        var timeStamp: Int = 0
-        
-        let semaPhore = DispatchSemaphore(value: 0)
-        
-        self.delegator.getLastBlockTimeStamp(completion: { timestamp in
-            timeStamp = timestamp
-            
-            semaPhore.signal()
-        })
-        
-        semaPhore.wait()
+        let timeStamp = try self.lastBlockTimeStamp()
         
         let timeData = self.getInt32Byte(int: BigUInt(Int(timeStamp)))
         
@@ -603,17 +621,7 @@ public class MetaWallet: NSObject {
 
         let pubKeyData = Data.fromHex(publicKeyResolverAddress!)
         
-        var timeStamp: Int = 0
-        
-        let semaPhore = DispatchSemaphore(value: 0)
-        
-        self.delegator.getLastBlockTimeStamp(completion: { timestamp in
-            timeStamp = timestamp
-            
-            semaPhore.signal()
-        })
-        
-        semaPhore.wait()
+        let timeStamp = try self.lastBlockTimeStamp()
 
         let timeData = self.getInt32Byte(int: BigUInt(timeStamp))
 
@@ -641,17 +649,7 @@ public class MetaWallet: NSObject {
         let msg = KDefine.KRemove_PubliKey.data(using: .utf8)
         let publickeyData = Data.fromHex(publicKey!)
         
-        var timeStamp: Int!
-        
-        let semaPhore = DispatchSemaphore(value: 0)
-        
-        self.delegator.getLastBlockTimeStamp(completion: { timestamp in
-            timeStamp = timestamp
-            
-            semaPhore.signal()
-        })
-        
-        semaPhore.wait()
+        let timeStamp = try self.lastBlockTimeStamp()
         
         let associateAddrData = Data.fromHex(address)
         
@@ -679,19 +677,7 @@ public class MetaWallet: NSObject {
         let msg = KDefine.kRemove_Address_MyIdentity.data(using: .utf8)
         let identityRegistryData = Data.fromHex(identityRegistry!)
         
-        var timeStamp: Int = 0
-        
-        let semaPhore = DispatchSemaphore(value: 0)
-        
-        // getLastBlockTimeStamp 는 비동기이므로 다른 서명 함수와 같이 완료를 기다린다.
-        // (이전에는 기다리지 않아 timestamp 0 으로 서명했다.)
-        self.delegator.getLastBlockTimeStamp(completion: { timestamp in
-            timeStamp = timestamp
-            
-            semaPhore.signal()
-        })
-        
-        semaPhore.wait()
+        let timeStamp = try self.lastBlockTimeStamp()
         
         let associateAddrData = Data.fromHex(address)
         
@@ -780,7 +766,7 @@ public class MetaWallet: NSObject {
             Task {
                 await self.transactionReceipt(txId: txId) { receipt in
                     guard let receipt = receipt else {
-                        completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: MetaWalletError.receiptNotFound))
+                        completion(nil, MetaWalletError.partialCreation(did: self.getDid(), underlying: MetaWalletError.transactionUnconfirmed(txId: txId)))
                         return
                     }
                     

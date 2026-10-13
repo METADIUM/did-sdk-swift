@@ -145,7 +145,8 @@ Secp256k1 Key pair를 생성하고 해당 키로 DID를 생성합니다.
 #### Delete DID
 DID를 삭제합니다. did-sdk-java 의 `deleteDid` 와 같이 두 트랜잭션입니다. 공개키를 삭제한 뒤 associated address 를 삭제합니다.
  
-* 두 번째 단계가 실패하면 공개키는 이미 삭제된 상태입니다. `MetaWalletError.partialDeletion(did:underlying:)` 로 알려 주며, 되돌리지 않습니다.
+* 두 번째 단계가 실패하면 공개키는 이미 삭제된 상태입니다. `MetaWalletError.partialDeletion(did:underlying:)` 로 알려 주며, 되돌리지 않습니다. associated address 는 체인에 남아 있을 수 있습니다. `underlying` 이 `transactionUnconfirmed(txId:)` 이면 제거되었는지 알 수 없으므로 `txId` 로 확인하십시오.
+* 최신 블록 시각을 가져오지 못하면(노드 오류) 서명 단계가 멈추지 않고 `MetaWalletError.notReady` 로 끝납니다. 두 번째 단계에서 그러면 `partialDeletion` 입니다.
 * 이전 버전은 첫 번째 단계(공개키 삭제)만 수행하고 끝났습니다. 그 버전으로 삭제한 DID 는 associated address 가 체인에 남아 있습니다.
 * `receipt` 는 두 번째 트랜잭션의 것입니다.
  
@@ -251,7 +252,7 @@ let vp = try wallet.issuePresentation(types: ["TestPresentation"], id: nil, nonc
 * VC, VP(ES256K)는 JWS signing input 의 SHA-256 다이제스트를 서명하며 결과는 r||s (64바이트, low-s) 입니다.
 * `MetaKeySigner` 는 항상 최종 다이제스트를 받으며 추가 해시 없이 그대로 서명해야 합니다. did-sdk-java 는 이더리움 접두 없이 keccak256 다이제스트를 서명하고 이 SDK 는 접두를 붙인 personal message 해시를 서명하므로, 두 SDK 를 모두 쓰는 키 보관 서비스는 SDK 마다 다른 다이제스트를 받으며 delegator 는 둘 다 허용합니다. 근거는 [go-delegator 소스](https://github.com/METADIUM/go-delegator/blob/64ac5a93485556ed59872e215dc9f2602d35d7eb/metaresolver/util.go#L15-L32)(`METADIUM/go-delegator` 의 `metaresolver/util.go`, `verifySignature` 가 접두 없는 서명과 접두 있는 서명을 모두 시도)이며, 외부 키 보관 서비스와 delegator 를 실제로 연동해 실행해 보지는 않았습니다.
 * 서명이 공개키와 맞는지 확인합니다. 키 보관 서비스가 다른 키로 서명하면 검증자 단계가 아니라 서명 시점에 `MetaKeySignerError.signatureMismatch` 로 실패합니다. `jwsSigner` 를 직접 넘긴 경우에도 서명이 지갑의 공개키로 검증되지 않으면 `MetaWalletError.signerMismatch` 를 던지고, DID 가 없으면 `MetaWalletError.noDid` 를 던집니다.
-* 서명자가 던진 오류는 삼키지 않고 completion 의 `error` 로 전달됩니다. 모든 종료 경로에서 completion 이 정확히 한 번 호출됩니다. receipt 를 받지 못하면 `MetaWalletError.receiptNotFound` 입니다.
+* 서명자가 던진 오류는 삼키지 않고 completion 의 `error` 로 전달됩니다. 모든 종료 경로에서 completion 이 정확히 한 번 호출됩니다. 트랜잭션은 제출되었지만 receipt 를 받지 못하면(타임아웃) `MetaWalletError.transactionUnconfirmed(txId:)` 입니다. 나중에 블록에 들어갈 수 있어 결과를 알 수 없으므로 `txId` 로 노드에서 확인하십시오.
 * DID 생성은 두 트랜잭션(create_identity, 공개키 등록)입니다. 두 번째 단계가 실패하면 공개키 없는 identity 가 남으며, `MetaWalletError.partialCreation(did:underlying:)` 로 DID 와 원인을 알려줍니다. 되돌리지 않습니다.
 * r, s 가 0 이거나 곡선 위수 이상이면 `MetaKeySignerError.invalidSignature` 입니다.
 * 트랜잭션이 revert 되면(receipt 의 status 가 failed) `MetaWalletError.transactionFailed(txId:)` 로 끝납니다. 해당 트랜잭션의 변경은 체인에 반영되지 않았습니다. 이전 버전은 revert 된 receipt 를 오류 없이 그대로 돌려주었습니다. DID 생성의 두 번째 단계(공개키 등록)가 revert 되면 `partialCreation(did:underlying:)` 의 `underlying` 으로 전달됩니다.
